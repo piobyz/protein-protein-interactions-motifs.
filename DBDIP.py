@@ -19,8 +19,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import UniqueConstraint, Index
 from sqlalchemy.exc import IntegrityError
 
-engine = create_engine('sqlite:///:memory:', echo=False)
-# engine = create_engine('sqlite:///DIP.db')
+# engine = create_engine('sqlite:///:memory:', echo=False)
+engine = create_engine('sqlite:///DIP.db')
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -36,7 +36,7 @@ class PDB(Base):
     chain = Column(String, nullable=False, index=True)
     sequence = Column(String, nullable=False)
 
-    __table_args__  = (UniqueConstraint('name', 'chain'), {})
+    __table_args__=(UniqueConstraint('name', 'chain'), {})
 
     def __init__(self, **kw):
         self.update(**kw)

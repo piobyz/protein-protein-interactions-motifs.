@@ -26,22 +26,22 @@ from sqlalchemy.exc import IntegrityError
 def main():
 
     input_files = os.listdir('../alignments')
-
+    
     for single_file in input_files:
         input_file = open('../alignments' + os.sep + single_file)
-
+    
         # each file should have an alignment of exactly 4 sequences:
         # seed entry, its patch, homologous protein, its patch
         # cycle to recognize them and retrieve its different features
         cycle = 1
-
+    
         for cur_record in SeqIO.parse(input_file, "fasta"):
             records = []
-
+    
             title = str(cur_record.name)
             description = str(cur_record.description)
             aligned_seq = cur_record.seq
-
+    
             ######## TABLE Proteins_seed ########
             if cycle == 1:
                 ######## TABLE PDB ########
@@ -68,7 +68,7 @@ def main():
                     name = title.split('/')[1]
                 except IndexError:
                     print "Uncorrect FASTA file (does not have a correct description)."
-
+    
                 sequence = ''.join(filter(lambda s: s != '-', aligned_seq.tomutable()))
                 sequence_length = len(sequence)
                 alignment = aligned_seq.tostring()
@@ -86,22 +86,22 @@ def main():
                         protein_seed_last_id = query.one()[0]
                     except Exception, e:
                         print 'Two identical Protein_seed.sequence entries??'
-
+    
             ######## TABLE Patches_seed ########
             elif cycle == 2:
                 name = ':'.join(title.split(':')[:-1])
                 alignment = aligned_seq.tostring()
-
+    
                 # we take every contiguous sequence as patch
                 patches = filter(lambda s: s != '', aligned_seq.tostring().split('-'))
                 for patch in patches:
                     patch_length = len(patch)
-
+    
                     new_seed_patch = Patch_seed(protein_seed_last_id, name, patch, patch_length,
                         alignment)
                     session.add(new_seed_patch)
                     session.flush()
-
+    
             ######## TABLE Proteins_putative ########
             elif cycle == 3:
                 try:
@@ -109,36 +109,36 @@ def main():
                     primary_accession_number = title.split('|')[1]
                 except IndexError:
                     print "Uncorrect FASTA file (does not have a correct description)."
-
+    
                 sequence = ''.join(filter(lambda s: s != '-', aligned_seq.tomutable()))
                 sequence_length = len(sequence)
                 alignment = aligned_seq.tostring()
-
+    
                 new_protein_putative = Protein_putative(name, primary_accession_number,
                     description, sequence, sequence_length, alignment)
                 session.add(new_protein_putative)
                 ######## TABLE Homologues ########
                 # Add association to homologues table
                 new_protein_seed.homologues_entry.append(new_protein_putative)
-
+    
                 session.flush()
                 protein_putative_last_id = new_protein_putative.id
-
+    
             ######## TABLE Patches_putative ########
             elif cycle == 4:
                 name = ':'.join(title.split(':')[:-1])
                 alignment = aligned_seq.tostring()
-
+    
                 # we take every contiguous sequence as patch
                 patches = filter(lambda s: s != '', aligned_seq.tostring().split('-'))
                 for patch in patches:
                     patch_length = len(patch)
-
+    
                     new_putative_patch = Patch_putative(protein_putative_last_id, name, patch,
                         patch_length, alignment)
                     session.add(new_putative_patch)
                     session.flush()
-
+    
             ### end of cases
             session.commit()
             cycle += 1
@@ -167,7 +167,7 @@ def main():
         for single_seed_reaction in seed_reaction_list:
             try:
                 new_interaction = Interaction(first_inter_protein_id, second_inter_protein_id,
-                    single_seed_reaction)
+                    single_seed_reaction.strip())
                 session.add(new_interaction)
             except UnboundLocalError:
                 pass
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     meta = MetaData()
     Base = declarative_base(metadata=meta)
 
-    engine = create_engine('sqlite:///PPI-3.db', echo=False)
+    engine = create_engine('sqlite:///PPI-1a.db', echo=True)
     meta.create_all(engine)
 
     Session = sessionmaker(bind=engine)

@@ -20,7 +20,7 @@ from sqlalchemy.schema import UniqueConstraint, Index
 from sqlalchemy.exc import IntegrityError
 
 # engine = create_engine('sqlite:///:memory:', echo=True)
-engine = create_engine('sqlite:///PPI-3.db')
+engine = create_engine('sqlite:///PPI-1a.db')
 Session = sessionmaker(bind=engine)
 session = Session()
 
