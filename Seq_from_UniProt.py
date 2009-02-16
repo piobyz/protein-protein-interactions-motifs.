@@ -11,7 +11,7 @@ __maintainer__ = "Piotr Byzia"
 __email__ = "piotr.byzia@gmail.com"
 __status__ = "Prototype"
 
-
+from Bio import SeqIO
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, MetaData
 from sqlalchemy.orm import relation, backref, join, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -19,7 +19,7 @@ from sqlalchemy.schema import UniqueConstraint, Index
 from sqlalchemy.exc import IntegrityError
 
 # engine = create_engine('sqlite:///:memory:', echo=True)
-engine = create_engine('sqlite:///PDB_UniProt.db', echo=False)
+engine = create_engine('sqlite:///UniProt_Seq.db', echo=False)
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -27,43 +27,42 @@ meta = MetaData()
 Base = declarative_base(metadata=meta)
 
 
-class PDB_UniProt(Base):
-    __tablename__ = 'PDB_UniProt'
+class UniProtSeq(Base):
+    __tablename__ = 'UniProtSeq'
 
     id = Column(Integer, primary_key=True, index=True)
-    pdb = Column(String, nullable=False, index=True)
-    chain = Column(String, nullable=False, index=True)
     uniprot = Column(String, nullable=False, index=True)
-    
+    sequence = Column(String, nullable=False)
+
     def __init__(self, **kw):
         self.update(**kw)
 
     def update(self, **kw):
-        if 'pdb' in kw:
-            self.pdb = kw['pdb']
-        if 'chain' in kw:
-            self.chain = kw['chain']
+        if 'sequence' in kw:
+            self.sequence = kw['sequence']
         if 'uniprot' in kw:
             self.uniprot = kw['uniprot']
 
     def __repr__(self):
-        return "<PDB_UniProt('%s|%s', '%s')>" % (self.pdb, self.chain, self.uniprot)
+        return "<UniProtSeq('%s|%s')>" % (self.uniprot, self.sequence)
 
 meta.create_all(engine)
 
 if __name__ == '__main__':
-    
-    # mapping_file = open('../pdbsws_chain.txt')
+    # !!! RUN ONCE ONLY !!!
+    # mapping_file = open('../uniprot_sprot.fasta')
     # 
-    # for line in mapping_file:
-    #     arguments = line.split(' ')
+    # for cur_record in SeqIO.parse(mapping_file, "fasta"):
+    #     title = str(cur_record.name).split('|')[1]
+    #     seq = cur_record.seq.tostring()
+    # 
     #     try:
-    #         new_PDB_UniProt = PDB_UniProt(pdb=arguments[0], chain=arguments[1], uniprot=(arguments[2]).strip())
-    #         session.add(new_PDB_UniProt)
+    #         new_UniProtSeq = UniProtSeq(uniprot=title, sequence=seq)
+    #         session.add(new_UniProtSeq)
     #         session.commit()
     #     except IntegrityError:
     #         session.rollback()
-    #         print 'Entry: %s already exist in the DB' % new_PDB_UniProt
+    #         print 'Entry: %s already exist in the UniProtSeq' % new_UniProtSeq
 
-    query = session.query(PDB_UniProt.pdb, PDB_UniProt.chain, PDB_UniProt.uniprot).order_by(PDB_UniProt.id)
+    query = session.query(UniProtSeq.uniprot, UniProtSeq.sequence).filter(UniProtSeq.uniprot=='P18646')
     print query.first()

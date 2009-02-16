@@ -1,0 +1,41 @@
+$ sqlite3 DIP-Hpylo.db 
+sqlite> select count(id) from Interactors;
+697
+sqlite> select count(distinct PDB_UniProt_id) from Structures;
+177
+
+$ sqlite3 DIP-Hsapi.db 
+sqlite> select count(distinct PDB_UniProt_id) from Structures;
+10690
+sqlite> select count(id) from Interactors;
+1652
+
+$ sqlite3 DIP-Celeg.db 
+sqlite> select count(id) from Interactors;
+2472
+sqlite> select count(distinct PDB_UniProt_id) from Structures;
+80
+
+$ sqlite3 DIP-Ecoli.db
+sqlite> select count(distinct PDB_UniProt_id) from Structures;
+3513
+sqlite> select count(distinct id) from Interactors;
+1886
+
+$ sqlite3 DIP-Dmela.db 
+sqlite> select count(distinct id) from Interactors;
+1186
+sqlite> select count(distinct PDB_UniProt_id) from Structures;
+787
+
+$ sqlite3 DIP-S.cerevisiae.db 
+sqlite> select count(distinct PDB_UniProt_id) from Structures;
+3844
+sqlite> select count(distinct id) from Interactors;
+4968
+
+$ sqlite3 DIP.db 
+sqlite> select count(distinct PDB_UniProt_id) from Structures;
+2801
+sqlite> select count(id) from Interactors;
+720

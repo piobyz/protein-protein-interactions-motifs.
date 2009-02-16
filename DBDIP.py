@@ -18,39 +18,25 @@ from sqlalchemy.orm import relation, backref, join, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import UniqueConstraint, Index
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
+from Seq_from_UniProt import UniProtSeq
 
 # engine = create_engine('sqlite:///:memory:', echo=False)
-engine = create_engine('sqlite:///DIP.db')
+engine = create_engine('sqlite:///DIP-S.cerevisiae.db', echo=False)
 Session = sessionmaker(bind=engine)
 session = Session()
 
 meta = MetaData()
 Base = declarative_base(metadata=meta)
 
+engine_uniprot = create_engine('sqlite:///UniProt_Seq.db', echo=False)
+Session_uniprot = sessionmaker(bind=engine_uniprot)
+session_uniprot = Session_uniprot()
 
-class PDB(Base):
-    __tablename__ = 'PDB'
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, index=True)
-    chain = Column(String, nullable=False, index=True)
-    sequence = Column(String, nullable=False)
-
-    __table_args__=(UniqueConstraint('name', 'chain'), {})
-
-    def __init__(self, **kw):
-        self.update(**kw)
-
-    def update(self, **kw):
-        if 'name' in kw:
-            self.name = kw['name']
-        if 'chain' in kw:
-            self.chain = kw['chain']
-        if 'sequence' in kw:
-            self.sequence = kw['sequence']
-
-    def __repr__(self):
-        return "<PDB('%s', '%s')>" % (self.name, self.chain)
+Structures = Table('Structures', meta,
+    Column('interactor_id', Integer, ForeignKey('Interactors.id')),
+    Column('PDB_UniProt_id', Integer, ForeignKey('PDB_UniProt.id'))
+)
 
 
 class Interactors(Base):
@@ -59,10 +45,9 @@ class Interactors(Base):
     id = Column(Integer, primary_key=True, index=True)
     dip_id = Column(String, nullable=False, unique=True, index=True)
     uniprot_id = Column(String, nullable=False, unique=True, index=True)
-    pdb_id = Column(Integer, ForeignKey('PDB.id'), index=True)
 
-    # many-to-one Interactors * 1 PDB
-    pdb_entry = relation('PDB', backref=backref('Interactors'))
+    # many-to-many Interactors * * PDB
+    structures_entry = relation('PDB_UniProt', secondary=Structures)
 
     def __init__(self, **kw):
         self.update(**kw)
@@ -98,40 +83,101 @@ class Interactions(Base):
     def __repr__(self):
         return "<Interactions(%s, %s)>" % (self.id, self.dip_id)
 
+
+class PDB_UniProt(Base):
+    __tablename__ = 'PDB_UniProt'
+
+    id = Column(Integer, primary_key=True, index=True)
+    pdb = Column(String, nullable=False, index=True)
+    chain = Column(String, nullable=False, index=True)
+    sequence = Column(String)
+    uniprot = Column(String, nullable=False, index=True)
+    
+    def __init__(self, **kw):
+        self.update(**kw)
+
+    def update(self, **kw):
+        if 'pdb' in kw:
+            self.pdb = kw['pdb']
+        if 'chain' in kw:
+            self.chain = kw['chain']
+        if 'sequence' in kw:
+            self.sequence = kw['sequence']
+        if 'uniprot' in kw:
+            self.uniprot = kw['uniprot']
+
+    def __repr__(self):
+        return "<PDB_UniProt('%s|%s', '%s')>" % (self.pdb, self.chain, self.uniprot)
+
+
 meta.create_all(engine)
 
 if __name__ == '__main__':
-    try:
-        new_PDB = PDB(name='1aa2', chain='D', sequence='ACCACATTTGGGTCTGA')
-        session.add(new_PDB)
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        print 'PDB entry: %s already exist in the DB' % new_PDB
+    # try:
+    #     new_PDB = PDB(name='1aa2', chain='D', sequence='ACCACATTTGGGTCTGA')
+    #     session.add(new_PDB)
+    #     session.commit()
+    # except IntegrityError:
+    #     session.rollback()
+    #     print 'PDB entry: %s already exist in the DB' % new_PDB
+    
+    # try:
+    #     new_interactor = Interactors(id='44593', dip_id='DIP-44593N', uniprot_id='Q9WVG6',
+    #         pdb_id='2342')
+    #     session.add(new_interactor)
+    #     session.commit()
+    # except IntegrityError:
+    #     session.rollback()
+    #     print 'Interactors entry: %s already exist in the DB' % new_interactor
+    # 
+    # try:
+    #     new_interaction = Interactions('13', 'DIP-13E', '951', '278')
+    #     session.add(new_interaction)
+    #     session.commit()
+    # except IntegrityError:
+    #     session.rollback()
+    #     print 'Interactions entry: %s already exist in the DB' % new_interaction
+    
+    
+    # query = session.query(PDB.name, PDB.chain).order_by(PDB.id)
+    # print query.first()
+    
+    # query = session.query(Interactors.id, Interactors.dip_id).order_by(Interactors.id)
+    # print query.first()
+    # 
+    # query = session.query(Interactions.id, Interactions.dip_id).order_by(Interactions.id)
+    # print query.first()
+    
+    ################ PDB_UniProt TABLE ################
+    # !!!Run only once to feed the database!!!
+    # mapping_file = open('../pdbsws_chain.txt')
+    # 
+    # for line in mapping_file:
+    #     arguments = line.split(' ')
+    #     try:
+    #         new_PDB_UniProt = PDB_UniProt(pdb=arguments[0], chain=arguments[1], uniprot=(arguments[2]).strip())
+    #         session.add(new_PDB_UniProt)
+    #         session.commit()
+    #     except IntegrityError:
+    #         session.rollback()
+    #         print 'Entry: %s already exist in the DB' % new_PDB_UniProt
 
-    try:
-        new_interactor = Interactors(id='44593', dip_id='DIP-44593N', uniprot_id='Q9WVG6',
-            pdb_id='2342')
-        session.add(new_interactor)
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        print 'Interactors entry: %s already exist in the DB' % new_interactor
+    ################ PDB_UniProt.sequence TABLE ################
+    # !!! Run only once !!!
+    # It transfers sequences obtained from UniProt (uniprot_sprot.fasta) on 15.02.2009
+    # from 
+    # WARNING: Not all sequences are present in this file.
 
-    try:
-        new_interaction = Interactions('13', 'DIP-13E', '951', '278')
-        session.add(new_interaction)
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        print 'Interactions entry: %s already exist in the DB' % new_interaction
+    # all_structures = session.query(Structures).all()
+    # for structure in all_structures:
+    #     pdb_entry = session.query(PDB_UniProt).filter(PDB_UniProt.id==structure.PDB_UniProt_id).one()
+    #     try:
+    #         uniprot_seq = session_uniprot.query(UniProtSeq.sequence).filter(UniProtSeq.uniprot==pdb_entry.uniprot).one()
+    #         pdb_entry.sequence = uniprot_seq[0]
+    #         session.flush()
+    #         session.commit()
+    #     except NoResultFound:
+    #         print 'No results for: %s' % pdb_entry.uniprot
 
-
-    query = session.query(PDB.name, PDB.chain).order_by(PDB.id)
-    print query.first()
-
-    query = session.query(Interactors.id, Interactors.dip_id).order_by(Interactors.id)
-    print query.first()
-
-    query = session.query(Interactions.id, Interactions.dip_id).order_by(Interactions.id)
+    query = session.query(PDB_UniProt.uniprot).order_by(PDB_UniProt.id)
     print query.first()

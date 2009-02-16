@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
-from DBDIP import PDB, Interactors, Interactions
+from DBDIP import Interactors, Interactions
 
 
 class DIPHandler(ContentHandler):
@@ -78,7 +78,7 @@ def main():
     handler = DIPHandler()
     parser.setContentHandler(handler)
 
-    parser.parse(open('../Mmusc20090126.mif25'))
+    parser.parse(open('../Hpylo20090126.mif25'))
 
 
 if __name__ == "__main__":
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     Base = declarative_base(metadata=meta)
 
     # engine = create_engine('sqlite:///:memory:', echo=True)
-    engine = create_engine('sqlite:///DIP.db', echo=False)
+    engine = create_engine('sqlite:///DIP-Hpylo.db', echo=False)
     meta.create_all(engine)
 
     Session = sessionmaker(bind=engine)
