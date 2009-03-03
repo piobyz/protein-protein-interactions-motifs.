@@ -1,4 +1,4 @@
-SELECT DISTINCT Interactions.id,
+SELECT 
     Interactions.interactor_one, PDB1.pdb, PDB1.chain,
     Interactions.interactor_two, PDB2.pdb, PDB2.chain
 FROM Interactions,
@@ -14,4 +14,5 @@ AND (
     (Interactions.interactor_two=Int2.id)
     AND (Int2.id=Str2.interactor_id)
     AND (Str2.PDB_Uniprot_id=PDB2.id)
-);
+)
+GROUP BY Interactions.interactor_one, Interactions.interactor_two;
