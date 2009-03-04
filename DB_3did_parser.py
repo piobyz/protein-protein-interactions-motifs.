@@ -11,17 +11,16 @@ __maintainer__ = "Piotr Byzia"
 __email__ = "piotr.byzia@gmail.com"
 __status__ = "Prototype"
 
-# TODO Remove redundancy in Domains and PDB(PDB-if they are really the same, not only name+chain, ->sequence!)
-
 
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, MetaData
 from sqlalchemy.orm import relation, backref, join, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import UniqueConstraint, Index
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 
 # engine = create_engine('sqlite:///:memory:', echo=True)
-engine = create_engine('sqlite:///../DB/3did_test.db', echo=True)
+engine = create_engine('sqlite:///../DB/3did_simple.db', echo=False)
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -53,7 +52,7 @@ class Interaction(Base):
     first_domain_id = Column(Integer, ForeignKey('Domains.id'),
         primary_key=True, index=True)
     second_domain_id = Column(Integer, ForeignKey('Domains.id'),
-        primary_key=True, index=True)
+        primary_key=True,index=True)
 
     # many_to_many Domains * * Domains
     interacting_domains = relation('Domain', backref='Interactions',
@@ -71,19 +70,22 @@ class PDB(Base):
     __tablename__ = 'PDB'
 
     id = Column(Integer, primary_key=True, index=True)
-    # domain_id = Column(Integer, ForeignKey('Domains.id'), primary_key=True, index=True)
+    domain_id = Column(Integer, ForeignKey('Domains.id'), nullable=False, index=True)
     name = Column(String, nullable=False, index=True)
     chain = Column(String, nullable=False, index=True)
     seqRes_range = Column(String, nullable=False)
     seq_length = Column(Integer, nullable=False)
     sequence = Column(String, nullable=False, index=True)
     
+    # many_to_one Domain * 1 PDB
+    corresponding_domain = relation('Domain', backref='PDB')
+    
     def __init__(self, **kw):
         self.update(**kw)
 
     def update(self, **kw):
-        # if 'domain_id' in kw:
-        #     self.domain_id = kw['domain_id']
+        if 'domain_id' in kw:
+            self.domain_id = kw['domain_id']
         if 'name' in kw:
             self.name = kw['name']
         if 'chain' in kw:
@@ -102,8 +104,9 @@ class PDB(Base):
 class Interacting_PDBs(Base):
     __tablename__ = 'Interacting_PDBs'
 
-    PDB_first_id = Column(Integer, ForeignKey('PDB.id'), primary_key=True, index=True)
-    PDB_second_id = Column(Integer, ForeignKey('PDB.id'), primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    PDB_first_id = Column(Integer, ForeignKey('PDB.id'), nullable=False, index=True)
+    PDB_second_id = Column(Integer, ForeignKey('PDB.id'), nullable=False, index=True)
     joined_interface_seq = Column(String, nullable=False, index=True)
     joined_interface_len = Column(Integer, nullable=False)
     score = Column(Integer, nullable=False)
@@ -125,33 +128,32 @@ class Interacting_PDBs(Base):
         return "<Interacting_PDBs('%s|%s')>" % (self.PDB_first_id, self.PDB_second_id)
 
 
-class Interface(Base):
-    __tablename__ = 'Interface'
-
-    id = Column(Integer, primary_key=True, index=True)
-    corresponding_PDB_id = Column(Integer, index=True)
-    residue_first = Column(String, nullable=False, index=True)
-    seqRes_first = Column(Integer, nullable=False)
-    residue_second = Column(String, nullable=False, index=True)
-    seqRes_second = Column(Integer, nullable=False)
-    contact_type = Column(String, nullable=False, index=True)
-
-    def __init__(self, corresponding_PDB_id, residue_first, seqRes_first, residue_second, seqRes_second, contact_type):
-        self.corresponding_PDB_id = corresponding_PDB_id
-        self.residue_first = residue_first
-        self.seqRes_first = seqRes_first
-        self.residue_second = residue_second
-        self.seqRes_second = seqRes_second
-        self.contact_type = contact_type
-
-    def __repr__(self):
-        return "<Interface('%s: %s|%s')>" % (self.corresponding_PDB_id, self.residue_first, self.residue_second)
+# class Interface(Base):
+#     __tablename__ = 'Interface'
+# 
+#     id = Column(Integer, primary_key=True, index=True)
+#     corresponding_PDB_id = Column(Integer, index=True)
+#     residue_first = Column(String, nullable=False, index=True)
+#     seqRes_first = Column(Integer, nullable=False)
+#     residue_second = Column(String, nullable=False, index=True)
+#     seqRes_second = Column(Integer, nullable=False)
+#     contact_type = Column(String, nullable=False, index=True)
+# 
+#     def __init__(self, corresponding_PDB_id, residue_first, seqRes_first, residue_second, seqRes_second, contact_type):
+#         self.corresponding_PDB_id = corresponding_PDB_id
+#         self.residue_first = residue_first
+#         self.seqRes_first = seqRes_first
+#         self.residue_second = residue_second
+#         self.seqRes_second = seqRes_second
+#         self.contact_type = contact_type
+# 
+#     def __repr__(self):
+#         return "<Interface('%s: %s|%s')>" % (self.corresponding_PDB_id, self.residue_first, self.residue_second)
 
 
 meta.create_all(engine)
 
 if __name__ == '__main__':
-    # !!! RUN ONCE ONLY !!!
     threedid_file = open('../3did_flat_Feb_15_2009.dat')
     
     for line in threedid_file:
@@ -168,42 +170,36 @@ if __name__ == '__main__':
 
             ######## TABLE Domains ########
             try:
+                # Check if triple (PfamA+PfamB+family_version) already exist, retrieve its Domains.id
+                first_domain_last_id = session.query(Domain.id).filter(Domain.PfamA == first_pfamA).filter(Domain.PfamB == first_pfamB).filter(Domain.family_version==first_family_version).one()[0]
+            except NoResultFound:
+                # else add new entry
                 first_domain = Domain(first_pfamA, first_pfamB, first_family_version)
                 session.add(first_domain)
                 session.flush()
                 first_domain_last_id = first_domain.id
-            except IntegrityError:
-                session.rollback()
-                # If pair (PfamA+PfamB) already exist, retrieve its Domains.id
-                try:
-                    first_domain_last_id = session.query(Domain.id).filter(Domain.PfamA==first_pfamA).filter(Domain.PfamB==first_pfamB).filter(Domain.family_version==first_family_version).one()[0]
-                    print first_domain_last_id
-                except Exception, e:
-                    print 'Two identical Domain entries??'
             try:
+                # Check if triple (PfamA+PfamB+family_version) already exist, retrieve its Domains.id
+                second_domain_last_id = session.query(Domain.id).filter(Domain.PfamA==second_pfamA).filter(Domain.PfamB == second_pfamB).filter(Domain.family_version==second_family_version).one()[0]
+            except NoResultFound:
+                # else add new entry
                 second_domain = Domain(second_pfamA, second_pfamB, second_family_version)
                 session.add(second_domain)
                 session.flush()
                 second_domain_last_id = second_domain.id
-            except IntegrityError:
-                session.rollback()
-                # If pair (pdb_id+chain) already exist, retrieve its PDB.id
-                try:
-                    second_domain_last_id = session.query(Domain.id).filter(Domain.PfamA==second_pfamA).filter(Domain.PfamB==second_pfamB).filter(Domain.family_version==second_family_version).one()[0]
-                    print second_domain_last_id
-                except Exception, e:
-                    print 'Two identical Domain entries??'
             session.commit()
             
             ######## TABLE Interactions ########
             try:
                 new_interaction = Interaction(first_domain_last_id, second_domain_last_id)
                 session.add(new_interaction)
-                session.flush()
+                session.commit()
+            except IntegrityError:
+                print 'Interaction between domains ids: %s and %s is already in the DB.' % (first_domain_last_id, second_domain_last_id)
+                session.rollback()
             except UnboundLocalError:
                 pass
-            session.commit()
-            # print first_pfamA, second_pfamA, first_pfamB, second_pfamB
+
         elif line.startswith('#=3D'):
             chains = line.split('\t')
 
@@ -226,8 +222,9 @@ if __name__ == '__main__':
                     joined_interface_len = len(joined_interface_seq)
                     
                     ######## TABLE PDB ########
+                    ### PDB derived from 1st domain
                     try:
-                        first_pdb = PDB(name=pdb_name, chain=first_chain, seqRes_range=first_chain_range, sequence=first_seq, seq_length=first_seq_len)
+                        first_pdb = PDB(domain_id=first_domain_last_id, name=pdb_name, chain=first_chain, seqRes_range=first_chain_range, sequence=first_seq, seq_length=first_seq_len)
                         # FIXME Add domain_id information
                         session.add(first_pdb)
                         session.flush()
@@ -235,14 +232,17 @@ if __name__ == '__main__':
                     except IntegrityError:
                         session.rollback()
 
+                    ### PDB derived from 2nd domain
                     try:
-                        second_pdb = PDB(name=pdb_name, chain=second_chain, seqRes_range=second_chain_range, sequence=second_seq, seq_length=second_seq_len)
+                        second_pdb = PDB(domain_id=second_domain_last_id, name=pdb_name, chain=second_chain, seqRes_range=second_chain_range, sequence=second_seq, seq_length=second_seq_len)
                         # FIXME Add domain_id information
                         session.add(second_pdb)
                         session.flush()
                         second_pdb_last_id = second_pdb.id
                     except IntegrityError:
                         session.rollback()
+
+                    session.commit()
 
                     score = chains[4].strip()
                     Zscore = chains[5].strip()
@@ -266,33 +266,34 @@ if __name__ == '__main__':
             second_interface_seq = []
 
             # print pdb_name, first_chain, first_chain_range, second_chain, second_chain_range, score, Zscore
+
         elif not line.startswith('//'):
             contact_residues = line.split('\t')
-
+        
             first_interface_residue = contact_residues[0].strip()
             first_interface_residue_position = contact_residues[2].strip()
-
+        
             second_interface_residue = contact_residues[1].strip()
             second_interface_residue_position = contact_residues[3].strip()
-
+        
             contact_type = contact_residues[4].strip()
-
+        
             first_interface_seq.append(first_interface_residue)
             second_interface_seq.append(second_interface_residue)
 
-            ######## TABLE Interface ########
-            try:
-                new_interface = Interface(first_pdb_last_id, first_interface_residue, first_interface_residue_position,
-                second_interface_residue, second_interface_residue_position, contact_type)
-                session.add(new_interface)
-                session.flush()
-            except IntegrityError:
-                session.rollback()
-            except NameError:
-                pass
+            # ######## TABLE Interface ########
+            # try:
+            #     new_interface = Interface(first_pdb_last_id, first_interface_residue, first_interface_residue_position,
+            #     second_interface_residue, second_interface_residue_position, contact_type)
+            #     session.add(new_interface)
+            #     session.flush()
+            # except IntegrityError:
+            #     session.rollback()
+            # except NameError:
+            #     pass
 
             # print first_interface_residue, first_interface_residue_position, second_interface_residue, second_interface_residue_position, contact_type
-            session.commit()
+            # session.commit()
 
         elif line.startswith('//'):
             pass

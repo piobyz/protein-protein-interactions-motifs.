@@ -1,6 +1,7 @@
+-- .output Hsapi.output
 SELECT 
-    Interactions.interactor_one, PDB1.pdb, PDB1.chain,
-    Interactions.interactor_two, PDB2.pdb, PDB2.chain
+    PDB1.pdb, PDB1.chain,
+    PDB2.pdb, PDB2.chain
 FROM Interactions,
     Interactors AS Int1, Interactors AS Int2,
     Structures AS Str1, Structures AS Str2,
