@@ -35,7 +35,7 @@ class Domain(Base):
     PfamA = Column(String, nullable=False, index=True)
     PfamB = Column(String, nullable=False, index=True)
     family_version = Column(String, nullable=False, index=True)
-    __table_args__  = (UniqueConstraint('PfamA', 'PfamB', 'family_version'), {})
+    __table_args__ = (UniqueConstraint('PfamA', 'PfamB', 'family_version'), {})
 
     def __init__(self, PfamA, PfamB, family_version):
         self.PfamA = PfamA
@@ -52,7 +52,7 @@ class Interaction(Base):
     first_domain_id = Column(Integer, ForeignKey('Domains.id'),
         primary_key=True, index=True)
     second_domain_id = Column(Integer, ForeignKey('Domains.id'),
-        primary_key=True,index=True)
+        primary_key=True, index=True)
 
     # many_to_many Domains * * Domains
     interacting_domains = relation('Domain', backref='Interactions',
@@ -76,10 +76,10 @@ class PDB(Base):
     seqRes_range = Column(String, nullable=False)
     seq_length = Column(Integer, nullable=False)
     sequence = Column(String, nullable=False, index=True)
-    
+
     # many_to_one Domain * 1 PDB
     corresponding_domain = relation('Domain', backref='PDB')
-    
+
     def __init__(self, **kw):
         self.update(**kw)
 
@@ -130,7 +130,7 @@ class Interacting_PDBs(Base):
 
 # class Interface(Base):
 #     __tablename__ = 'Interface'
-# 
+#
 #     id = Column(Integer, primary_key=True, index=True)
 #     corresponding_PDB_id = Column(Integer, index=True)
 #     residue_first = Column(String, nullable=False, index=True)
@@ -138,24 +138,26 @@ class Interacting_PDBs(Base):
 #     residue_second = Column(String, nullable=False, index=True)
 #     seqRes_second = Column(Integer, nullable=False)
 #     contact_type = Column(String, nullable=False, index=True)
-# 
-#     def __init__(self, corresponding_PDB_id, residue_first, seqRes_first, residue_second, seqRes_second, contact_type):
+#
+#     def __init__(self, corresponding_PDB_id, residue_first, seqRes_first, residue_second,
+# seqRes_second, contact_type):
 #         self.corresponding_PDB_id = corresponding_PDB_id
 #         self.residue_first = residue_first
 #         self.seqRes_first = seqRes_first
 #         self.residue_second = residue_second
 #         self.seqRes_second = seqRes_second
 #         self.contact_type = contact_type
-# 
+#
 #     def __repr__(self):
-#         return "<Interface('%s: %s|%s')>" % (self.corresponding_PDB_id, self.residue_first, self.residue_second)
+#         return "<Interface('%s: %s|%s')>" % (self.corresponding_PDB_id, self.residue_first,
+# self.residue_second)
 
 
 meta.create_all(engine)
 
 if __name__ == '__main__':
     threedid_file = open('../3did_flat_Feb_15_2009.dat')
-    
+
     for line in threedid_file:
         if line.startswith('#=ID'):
             pfams = line.split('\t')
@@ -171,7 +173,9 @@ if __name__ == '__main__':
             ######## TABLE Domains ########
             try:
                 # Check if triple (PfamA+PfamB+family_version) already exist, retrieve its Domains.id
-                first_domain_last_id = session.query(Domain.id).filter(Domain.PfamA == first_pfamA).filter(Domain.PfamB == first_pfamB).filter(Domain.family_version==first_family_version).one()[0]
+                first_domain_last_id = session.query(Domain.id).filter(Domain.PfamA ==
+                first_pfamA).filter(Domain.PfamB == first_pfamB).filter(Domain.family_version ==
+                first_family_version).one()[0]
             except NoResultFound:
                 # else add new entry
                 first_domain = Domain(first_pfamA, first_pfamB, first_family_version)
@@ -180,7 +184,9 @@ if __name__ == '__main__':
                 first_domain_last_id = first_domain.id
             try:
                 # Check if triple (PfamA+PfamB+family_version) already exist, retrieve its Domains.id
-                second_domain_last_id = session.query(Domain.id).filter(Domain.PfamA==second_pfamA).filter(Domain.PfamB == second_pfamB).filter(Domain.family_version==second_family_version).one()[0]
+                second_domain_last_id = session.query(Domain.id).filter(Domain.PfamA ==
+                second_pfamA).filter(Domain.PfamB == second_pfamB).filter(Domain.family_version ==
+                second_family_version).one()[0]
             except NoResultFound:
                 # else add new entry
                 second_domain = Domain(second_pfamA, second_pfamB, second_family_version)
@@ -188,14 +194,15 @@ if __name__ == '__main__':
                 session.flush()
                 second_domain_last_id = second_domain.id
             session.commit()
-            
+
             ######## TABLE Interactions ########
             try:
                 new_interaction = Interaction(first_domain_last_id, second_domain_last_id)
                 session.add(new_interaction)
                 session.commit()
             except IntegrityError:
-                print 'Interaction between domains ids: %s and %s is already in the DB.' % (first_domain_last_id, second_domain_last_id)
+                print 'Interaction between domains ids: %s and %s is already in the DB.' %
+                (first_domain_last_id, second_domain_last_id)
                 session.rollback()
             except UnboundLocalError:
                 pass
@@ -211,7 +218,7 @@ if __name__ == '__main__':
             second_chain = chains[3].split(':')[0]
             second_chain_range = chains[3].split(':')[1]
 
-            # First loop will be empty, but for each next run it will contain a whole sequence for each interface
+            # First loop will be empty, for each next run it will contain a whole sequence for each interface
             try:
                 if first_interface_seq and second_interface_seq:
                     first_seq = ''.join(first_interface_seq)
@@ -220,11 +227,12 @@ if __name__ == '__main__':
                     second_seq_len = len(second_interface_seq)
                     joined_interface_seq = ''.join(first_interface_seq) + ''.join(second_interface_seq)
                     joined_interface_len = len(joined_interface_seq)
-                    
+
                     ######## TABLE PDB ########
                     ### PDB derived from 1st domain
                     try:
-                        first_pdb = PDB(domain_id=first_domain_last_id, name=pdb_name, chain=first_chain, seqRes_range=first_chain_range, sequence=first_seq, seq_length=first_seq_len)
+                        first_pdb = PDB(domain_id=first_domain_last_id, name=pdb_name, chain=first_chain,
+                        seqRes_range=first_chain_range, sequence=first_seq, seq_length=first_seq_len)
                         # FIXME Add domain_id information
                         session.add(first_pdb)
                         session.flush()
@@ -234,7 +242,9 @@ if __name__ == '__main__':
 
                     ### PDB derived from 2nd domain
                     try:
-                        second_pdb = PDB(domain_id=second_domain_last_id, name=pdb_name, chain=second_chain, seqRes_range=second_chain_range, sequence=second_seq, seq_length=second_seq_len)
+                        second_pdb = PDB(domain_id=second_domain_last_id, name=pdb_name,
+                        chain=second_chain, seqRes_range=second_chain_range, sequence=second_seq,
+                        seq_length=second_seq_len)
                         # FIXME Add domain_id information
                         session.add(second_pdb)
                         session.flush()
@@ -249,14 +259,13 @@ if __name__ == '__main__':
 
                     ######## TABLE Interacting_PDBs ########
                     try:
-                        interacting_pdbs = Interacting_PDBs(first_pdb_last_id, second_pdb_last_id, joined_interface_seq, joined_interface_len, score, Zscore)
+                        interacting_pdbs = Interacting_PDBs(first_pdb_last_id, second_pdb_last_id,
+                        joined_interface_seq, joined_interface_len, score, Zscore)
                         session.add(interacting_pdbs)
                         session.flush()
                     except IntegrityError:
                         session.rollback()
             except NameError, e:
-                # FIXME create instance of PDB here, but w/o first_seq and first_seq_len (the same with second)
-                # and then update this instance with those 2 attributes
                 print "Most probably it's 1st run, so there is no interface to insert yet.", e
             session.commit()
 
@@ -269,21 +278,22 @@ if __name__ == '__main__':
 
         elif not line.startswith('//'):
             contact_residues = line.split('\t')
-        
+
             first_interface_residue = contact_residues[0].strip()
             first_interface_residue_position = contact_residues[2].strip()
-        
+
             second_interface_residue = contact_residues[1].strip()
             second_interface_residue_position = contact_residues[3].strip()
-        
+
             contact_type = contact_residues[4].strip()
-        
+
             first_interface_seq.append(first_interface_residue)
             second_interface_seq.append(second_interface_residue)
 
             # ######## TABLE Interface ########
             # try:
-            #     new_interface = Interface(first_pdb_last_id, first_interface_residue, first_interface_residue_position,
+            #     new_interface = Interface(first_pdb_last_id, first_interface_residue,
+            # first_interface_residue_position,
             #     second_interface_residue, second_interface_residue_position, contact_type)
             #     session.add(new_interface)
             #     session.flush()
@@ -292,7 +302,8 @@ if __name__ == '__main__':
             # except NameError:
             #     pass
 
-            # print first_interface_residue, first_interface_residue_position, second_interface_residue, second_interface_residue_position, contact_type
+            # print first_interface_residue, first_interface_residue_position, second_interface_residue,
+            # second_interface_residue_position, contact_type
             # session.commit()
 
         elif line.startswith('//'):

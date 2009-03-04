@@ -30,8 +30,7 @@ Base = declarative_base(metadata=meta)
 
 homologues = Table('Homologues', meta,
     Column('protein_seed_id', Integer, ForeignKey('Proteins_seed.id')),
-    Column('protein_putative_id', Integer, ForeignKey('Proteins_putative.id'))
-)
+    Column('protein_putative_id', Integer, ForeignKey('Proteins_putative.id')))
 
 
 class PDB(Base):
@@ -40,8 +39,8 @@ class PDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True)
     chain = Column(String, nullable=False, index=True)
-    __table_args__  = (UniqueConstraint('name', 'chain'), {})
-    
+    __table_args__ = (UniqueConstraint('name', 'chain'), {})
+
     def __init__(self, **kw):
         self.update(**kw)
 
@@ -185,7 +184,7 @@ if __name__ == '__main__':
 
     new_PDB = PDB(name='1aa2', chain='A')
     session.add(new_PDB)
-    
+
     session.commit()
 
     try:
@@ -199,6 +198,6 @@ if __name__ == '__main__':
     new_protein = Protein_seed('1st protein', 'DSGFFGHFGJ', 13, 'SDF-DFGDFG---FG', 1)
     session.add(new_protein)
     session.commit()
-    
+
     query = session.query(PDB.name, PDB.chain).order_by(PDB.id)
     print query.all()

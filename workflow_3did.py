@@ -26,9 +26,9 @@ from sqlalchemy.exc import IntegrityError
 def main():
     interfaces = session.query(Interacting_PDBs.joined_interface_seq).all()
     sample_interfaces = interfaces[1000:2000]
-    
+
     sample_fasta_handler = open('PPI-3did-onethousand.fa', 'a')
-    
+
     for interface in sample_interfaces:
         sample_fasta_handler.write('> XXX\n')
         sample_fasta_handler.write('%s\n' % interface)
