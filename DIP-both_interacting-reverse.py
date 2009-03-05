@@ -52,7 +52,7 @@ def create_reversed_interactions(dip_interactions_source):
         without_duplicates_file_handler.write(interaction+'\n')
 
     without_duplicates_file_handler.close()
-    
+
     return without_duplicates_file_name
 
 

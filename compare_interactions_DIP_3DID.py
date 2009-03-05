@@ -20,7 +20,9 @@ import sys
 
 THREE_DID_INTERACTIONS_HANDLER = open('../DB/3DID-all-interacting-PDB_chain.out', 'r')
 
-def compare_interactions(dip_interactions_source, three_did_interactions_source=THREE_DID_INTERACTIONS_HANDLER):
+
+def compare_interactions(dip_interactions_source, three_did_interactions_source = \
+    THREE_DID_INTERACTIONS_HANDLER):
     """Take interactions from DIP and find overlapping interactions in 3DID."""
     dip_interactions = {}
     three_did_interactions = {}
