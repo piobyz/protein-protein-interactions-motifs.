@@ -21,21 +21,21 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from Seq_from_UniProt import UniProtSeq
 
-# engine = create_engine('sqlite:///:memory:', echo=False)
-engine = create_engine('sqlite:///DIP-S.cerevisiae.db', echo=False)
-Session = sessionmaker(bind=engine)
-session = Session()
+# engine = create_engine('sqlite:///:memory:', echo=True)
+engine = create_engine('sqlite:///DB/Mmusc20090126.db', echo=True)
+# Session = sessionmaker(bind=engine)
+# session = Session()
 
 meta = MetaData()
 Base = declarative_base(metadata=meta)
 
-engine_uniprot = create_engine('sqlite:///UniProt_Seq.db', echo=False)
-Session_uniprot = sessionmaker(bind=engine_uniprot)
-session_uniprot = Session_uniprot()
+# engine_uniprot = create_engine('sqlite:///UniProt_Seq.db', echo=False)
+# Session_uniprot = sessionmaker(bind=engine_uniprot)
+# session_uniprot = Session_uniprot()
 
 Structures = Table('Structures', meta,
-    Column('interactor_id', Integer, ForeignKey('Interactors.id')),
-    Column('PDB_UniProt_id', Integer, ForeignKey('PDB_UniProt.id'))
+    Column('interactor_id', Integer, ForeignKey('Interactors.id'), index=True),
+    Column('PDB_UniProt_id', Integer, ForeignKey('PDB_UniProt.id'), index=True)
 )
 
 
