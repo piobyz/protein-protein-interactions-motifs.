@@ -18,7 +18,7 @@ __status__ = "Prototype"
 
 import sys
 
-THREE_DID_INTERACTIONS_HANDLER = open('../DB/3DID-all-interacting-PDB_chain.out', 'r')
+THREE_DID_INTERACTIONS_HANDLER = open('../DB/3DID/3DID-all-interacting-PDB_chain_seq.out', 'r')
 
 
 def compare_interactions(dip_interactions_source, three_did_interactions_source = \
@@ -33,6 +33,7 @@ def compare_interactions(dip_interactions_source, three_did_interactions_source 
     except IOError:
         'There is no such a file on path: ', dip_interactions_source
         sys.exit(1)
+
     # Final results will be written here
     try:
         results_handler = open(dip_interactions_source + '-overlapping-3DID.fa', 'w')
