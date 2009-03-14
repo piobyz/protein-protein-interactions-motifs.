@@ -10,16 +10,10 @@ __email__ = "piotr.byzia@gmail.com"
 __status__ = "Prototype"
 
 
-import sys
-import os
-from optparse import OptionParser
 import logging
 import logging.config
 from xml.sax.handler import ContentHandler
 from xml.sax import make_parser
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 from DBDIP import Interactors, Interactions
 
@@ -89,51 +83,14 @@ class DIPHandler(ContentHandler):
                 self.session.rollback()
 
 
-def main():
-    usage="""
-This is a part of the package for String Kernel Classification using SVM.
-Written by Piotr Byzia (piotr.byzia@gmail.com).
-Credits: Hugh Shanahan, Royal Holloway University of London.
-Licence: ...
-
-Usage: %prog [options] *.mif25
-"""
-    parser = OptionParser(usage=usage, version="%prog 0.1.0")
-    parser.add_option("-t", "--test", action="store_true", dest="test", default=False, help="Test mode: DB in RAM only!! [default: %default]")
-    parser.add_option("-e", "--echo", action="store_true", dest="echo", default=False, help="Echo for DB: True or False [default: %default]")
-
-    (options, args) = parser.parse_args()
-    if(len(args) != 1):
-        parser.print_help()
-        sys.exit(1)
-    
-    try:
-        input_file = open(args[0])
-    except IOError:
-        # log_load.exception('There is no such a file: %s' % options.input)
-        sys.exit(1)
-    
-    file_name = os.path.basename(args[0]).split('.')[0]
-
-    if options.test:
-        engine = create_engine('sqlite:///:memory:', echo=options.echo)
-        # log_load.info('DB in RAM.')
-    else:
-        engine = create_engine('sqlite:///' + 'DB/' + file_name + '.db', echo=options.echo)
-        # log_load.info('DB stored in file: %s' % 'DB/' + file_name + '.db')
-        # FIXME Find out how to initiate mapper class in DBDIP.py with parameter so that created file with DB
-        # has the same name as this one above.
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
+def sax_parse(file_to_parse, DB_session):
     # SAX init
     sax_parser = make_parser()
-    handler = DIPHandler(session)
+    handler = DIPHandler(DB_session)
     sax_parser.setContentHandler(handler)
 
-    sax_parser.parse(open(args[0]))
-
+    sax_parser.parse(file_to_parse)
 
 if __name__ == "__main__":
-    main()
+    'This module is supposed only to be imported.'
+    # TODO insert tests here
