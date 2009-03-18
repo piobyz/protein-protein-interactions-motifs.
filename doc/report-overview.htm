@@ -350,7 +350,7 @@ in creating interface (wrapper for NACCESS is available in BioPython).</p>
 <p>For each species (from each *.db file) there were files with PDB1|chain1|PDB2|chain2 interactions prepared.
 Subsequently, the content of file above was compared against all interactions from 3DID and corresponding interactions were saved
 together with corresponding sequence.</p>
-<p>*.db files were prepared by DIP.py and DBDIP.py</p>
+<p><strong>*.db</strong> files were prepared by DIP.py and DBDIP.py</p>
 <p>TODO: note that input files need to be corrected manually in source before every run.</p>
 <p>TODO: automate whole workflow!!</p>
 <p>TODO: automate launching SQL scripts / write them using SQLAlchemy</p>
@@ -358,9 +358,11 @@ together with corresponding sequence.</p>
 <p>TODO compare_pdb_list.py see TODOs inside the file</p>
 <p>TODO !!! check whether there are some issue with case sensitive PDB IDs in every file I use !!!</p>
 <p>Workflow:
-1. assume we have downloaded mif files from DIP for every species</p>
+1. assume we have downloaded *.mif25 files from DIP for every species</p>
+<p>1a. Mif25 files need to be parsed to obtain DB/DIP-*.db files (DIP.py for interactors and interactions
+parsing and DBDIP.py for Structures and UniProt mapping)</p>
 <ol class="arabic simple" start="2">
-<li>sqlite3 DIP-Ecoli.db &lt; ../PPIM/DIP-both_interacting-detailed.sql (change .output inside the sql file)</li>
+<li>sqlite3 DIP-Ecoli.db &lt; ../PPIM/DIP-both_interacting-detailed.sql (change .output inside the SQL file)</li>
 <li>now we have PDB1|chain1|PDB2|chain2 for every species in *.output files</li>
 <li>run once: sqlite3 3did_simple.db &lt; ../PPIM/3DID-interacting-PDB_chain.sql (produces 3DID-all-interacting-PDB_chain_seq.out)</li>
 <li>python DIP-both_interacting-reverse.py ../DB/Interacting_PDBs-DIP-in-3DID/Ecoli.output</li>
@@ -550,6 +552,59 @@ in comparisons. Total number of 3DID interactions were <strong>99160</strong>.</
 <p>Found <strong>809</strong> entries present in both lists.</p>
 <p>JENA set size: DISTINCT  <strong>1610</strong>  ALL:  1610</p>
 <p>3DID set size: DISTINCT  <strong>27132</strong>  ALL:  247400</p>
+<p>2009-03-11 14:26:16,985 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(78)[motifkernel.loadData]: INFO Dividing data/S.cerevisiae.output-reversed-without-duplicates.out-overlapping-3DID.fa into TEST +: 14, TRAINING +: 42
+2009-03-11 14:26:36,838 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(75)[motifkernel.loadData]: INFO Dividing test set into TEST +: 7, shuffled TEST -: 7
+2009-03-11 14:26:40,943 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(99)[motifkernel.loadData]: INFO From data/S.cerevisiae.output-reversed-without-duplicates.out-overlapping-3DID.fa: TRAINING -: 42
+2009-03-11 14:27:19,744 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(50)[motifkernel.svm]: INFO +++RADIAL KERNEL+++
+2009-03-11 14:27:19,744 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(58)[motifkernel.svm]: INFO ====S: SVM (3, 0) 25 % training set====
+2009-03-11 14:27:49,719 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(121)[motifkernel.svm]: INFO Training: extras/svm-train -c 0.03125 -g 0.0001220703125 output/libsvm_training.input.scale output/libsvm_training.input.model
+2009-03-11 14:27:51,294 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 71.4286% (10/14) (classification)</p>
+<p>2009-03-11 14:27:51,300 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 14:27:51,331 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 14:27:51,331 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(52)[motifkernel.svm]: INFO +++LINEAR KERNEL+++
+2009-03-11 14:27:51,331 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(58)[motifkernel.svm]: INFO ====S: SVM (3, 0) 25 % training set====
+2009-03-11 14:27:59,085 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 64.2857% (9/14) (classification)</p>
+<p>2009-03-11 14:27:59,091 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 14:27:59,091 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 14:28:00,657 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(50)[motifkernel.svm]: INFO +++RADIAL KERNEL+++
+2009-03-11 14:28:00,657 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(60)[motifkernel.svm]: INFO ====SVM (3, 1) 25 % training set====
+2009-03-11 14:28:33,857 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(121)[motifkernel.svm]: INFO Training: extras/svm-train -c 0.03125 -g 0.0001220703125 output/libsvm_training.input.scale output/libsvm_training.input.model
+2009-03-11 14:28:35,864 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 85.7143% (12/14) (classification)</p>
+<p>2009-03-11 14:28:35,871 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 14:28:35,871 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 14:28:35,871 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(52)[motifkernel.svm]: INFO +++LINEAR KERNEL+++
+2009-03-11 14:28:35,872 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(60)[motifkernel.svm]: INFO ====SVM (3, 1) 25 % training set====
+2009-03-11 14:28:44,140 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 57.1429% (8/14) (classification)</p>
+<p>2009-03-11 14:28:44,147 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 14:28:44,148 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 14:28:44,303 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(78)[motifkernel.loadData]: INFO Dividing data/S.cerevisiae.output-reversed-without-duplicates.out-overlapping-3DID.fa into TEST +: 14, TRAINING +: 42
+2009-03-11 14:34:37,527 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(75)[motifkernel.loadData]: INFO Dividing test set into TEST +: 7, shuffled TEST -: 7
+2009-03-11 14:36:00,196 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(99)[motifkernel.loadData]: INFO From data/S.cerevisiae.output-reversed-without-duplicates.out-overlapping-3DID.fa: TRAINING -: 42
+2009-03-11 14:48:38,181 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(50)[motifkernel.svm]: INFO +++RADIAL KERNEL+++
+2009-03-11 14:48:38,182 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(58)[motifkernel.svm]: INFO ====S: SVM (4, 0) 25 % training set====
+2009-03-11 15:32:56,729 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(121)[motifkernel.svm]: INFO Training: extras/svm-train -c 0.03125 -g 0.0001220703125 output/libsvm_training.input.scale output/libsvm_training.input.model
+2009-03-11 15:40:11,757 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 42.8571% (6/14) (classification)</p>
+<p>2009-03-11 15:40:11,902 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 15:40:11,902 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 15:40:11,902 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(52)[motifkernel.svm]: INFO +++LINEAR KERNEL+++
+2009-03-11 15:40:11,903 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(58)[motifkernel.svm]: INFO ====S: SVM (4, 0) 25 % training set====
+2009-03-11 16:31:29,342 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 21.4286% (3/14) (classification)</p>
+<p>2009-03-11 16:31:29,488 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 16:31:29,488 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 16:32:00,156 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(50)[motifkernel.svm]: INFO +++RADIAL KERNEL+++
+2009-03-11 16:32:00,160 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(60)[motifkernel.svm]: INFO ====SVM (4, 1) 25 % training set====
+2009-03-11 17:16:47,669 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(121)[motifkernel.svm]: INFO Training: extras/svm-train -c 0.03125 -g 0.0001220703125 output/libsvm_training.input.scale output/libsvm_training.input.model
+2009-03-11 17:23:58,475 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 64.2857% (9/14) (classification)</p>
+<p>2009-03-11 17:23:58,619 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 17:23:58,620 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 17:23:58,651 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(52)[motifkernel.svm]: INFO +++LINEAR KERNEL+++
+2009-03-11 17:23:58,651 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(60)[motifkernel.svm]: INFO ====SVM (4, 1) 25 % training set====
+2009-03-11 18:14:48,912 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 42.8571% (6/14) (classification)</p>
+<p>2009-03-11 18:14:49,060 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 7, all negatives: 7
+2009-03-11 18:14:49,060 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 14
+2009-03-11 18:14:54,391 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(78)[motifkernel.loadData]: INFO Dividing data/S.cerevisiae.output-reversed-without-duplicates.out-overlapping-3DID.fa into TEST +: 14, TRAINING +: 42
+2009-03-11 20:14:47,226 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(75)[motifkernel.loadData]: INFO Dividing test set into TEST +: 7, shuffled TEST -: 7
+2009-03-11 20:41:59,734 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(99)[motifkernel.loadData]: INFO From data/S.cerevisiae.output-reversed-without-duplicates.out-overlapping-3DID.fa: TRAINING -: 42</p>
 </div>
 </div>
 </div>
