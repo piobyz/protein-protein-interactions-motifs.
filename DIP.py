@@ -20,6 +20,7 @@ from DBDIP import Interactors, Interactions
 # logging.config.fileConfig("log/logconf.ini")
 # log_load = logging.getLogger('motifkernel.loadData')
 
+
 class DIPHandler(ContentHandler):
 
     def __init__(self, session):
