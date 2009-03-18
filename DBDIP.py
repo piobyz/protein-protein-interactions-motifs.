@@ -37,6 +37,14 @@ from sqlalchemy.sql.expression import func
 import DIP
 from DB_3DID import PDB, Interacting_PDBs, parse_3did
 
+import logging
+import logging.config
+
+# Logging configuration
+logging.config.fileConfig("log/logging.conf")
+log_load = logging.getLogger('load')
+
+
 # TABLE Interactors, Interactions, PDB_UniProt
 meta = MetaData()
 Base = declarative_base(metadata=meta)
@@ -162,8 +170,7 @@ def pdb2uniprot(current_session):
     try:
         mapping_file = open('../pdbsws_chain.txt')
     except IOError:
-        # log_load('There is no file ../pdbsws_chain.txt with PDB to UniProt mappings.')
-        print 'There is no file ../pdbsws_chain.txt with PDB to UniProt mappings.'
+        log_load.exception('There is no file ../pdbsws_chain.txt with PDB to UniProt mappings.')
         
     for line in mapping_file:
         arguments = line.split(' ')
@@ -173,8 +180,7 @@ def pdb2uniprot(current_session):
             current_session.commit()
         except IntegrityError:
             current_session.rollback()
-            # log_db.exception('Entry: %s already exist in the DB' % new_PDB_UniProt)
-            print 'Entry: %s already exists in the DB' % new_PDB_UniProt
+            log_load.exception('Entry: %s already exist in the DB' % new_PDB_UniProt)
 
 
 def uniprot_sequence(current_session, current_session_uniprot):
@@ -186,8 +192,7 @@ def uniprot_sequence(current_session, current_session_uniprot):
     try:
         mapping_file = open('../uniprot_sprot.fasta')
     except IOError:
-        print 'File %s is not present.' % mapping_file
-        # log_load.excepttion('File %s is not present.' % mapping_file)
+        log_load.excepttion('File %s is not present.' % mapping_file)
         # FIXME continue the script ommiting this analysis or exit(1)??
 
     for cur_record in SeqIO.parse(mapping_file, "fasta"):
@@ -200,8 +205,7 @@ def uniprot_sequence(current_session, current_session_uniprot):
             current_session_uniprot.commit()
         except IntegrityError:
             current_session_uniprot.rollback()
-            # log_db.exception('Entry: %s already exist in the UniProtSeq' % new_UniProtSeq)
-            print 'Entry: %s already exist in the UniProtSeq' % new_UniProtSeq
+            log_load.exception('Entry: %s already exist in the UniProtSeq' % new_UniProtSeq)
 
     # Fill sequence entry for each UniProt in Structures TABLE
     all_structures = current_session.query(Structures).all()
@@ -213,8 +217,7 @@ def uniprot_sequence(current_session, current_session_uniprot):
             # session.flush()
             current_session_uniprot.commit()
         except NoResultFound:
-            # log_db.exception(''No results for: %s' % pdb_entry.uniprot)
-            print 'No results for: %s' % pdb_entry.uniprot
+            log_load.exception('No results for: %s' % pdb_entry.uniprot)
 
 
 def uniq(alist):
@@ -243,8 +246,7 @@ def create_reversed_interactions_removing_duplicates(dip_interactions_source):
         with_possible_duplicates.append(reversed_interaction)
 
     without_duplicates = uniq(with_possible_duplicates)
-    print 'Found %s duplicates.' % (len(with_possible_duplicates) - len(without_duplicates))
-    # log_db.info('Found %s duplicates.' % (len(with_possible_duplicates) - len(without_duplicates)))
+    log_load.info('Found %s duplicates.' % (len(with_possible_duplicates) - len(without_duplicates)))
 
     return without_duplicates
 
@@ -390,18 +392,19 @@ Run tests in tests/ .
     
     try:
         input_file = open(args[0])
+        log_load.debug('Program has been called by: %s %s' % (options, args))
     except IOError:
-        # log_load.exception('There is no such a file: %s' % options.input)
+        log_load.exception('There is no such a file: %s' % options.input)
         sys.exit(1)
     
     file_name = os.path.basename(args[0]).split('.')[0]
 
     if options.test:
         engine = create_engine('sqlite:///:memory:', echo=options.echo)
-        # log_load.info('DB in RAM.')
+        log_load.debug('DB in RAM.')
     else:
         engine = create_engine('sqlite:///' + 'DB/' + file_name + '.db', echo=options.echo)
-        # log_load.info('DB stored in file: %s' % 'DB/' + file_name + '.db')
+        log_load.debug('DB stored in file: %s' % 'DB/' + file_name + '.db')
 
     meta.create_all(engine)
     # TODO In case when sb wants to create a 3DID DB only the step above is not necessary.
@@ -431,16 +434,14 @@ Run tests in tests/ .
         if options.uniprot:
             # Create PDB_UniProt with mappings between each PDB+chain and UniProt
             pdb2uniprot(session)
-            # log_load.info('PDB to UniProt mapping DB has been created.')
+            log_load.debug('PDB to UniProt mapping DB has been created.')
         if options.uniseq:
             # Feed the PDB_UniProt TABLE with sequences for each UniProt
             # FIXME Not sure if this should be a sepate step OR *always* connected with the one above
             uniprot_sequence(session, session_uniprot)
-            # log_load.info('Sequence for each UniProt has been transfered.')
-            print 'UniProt_Seq DB created and filled with sequences.'
+            log_load.debug('Sequence for each UniProt has been transfered.')
     else:
-        # log_load.info('PDB to UniProt mapping has NOT been applied in this run.')
-        print 'UniProt_Seq NOT created (i.e. NO mappings and sequences).'
+        log_load.debug('PDB to UniProt mapping has NOT been applied in this run.')
     
     if options.did or options.compare or options.most:
         if options.test:
@@ -456,11 +457,9 @@ Run tests in tests/ .
         # TODO check if that DB already exist, if yes -- skip the creation
         did_TEMP = '../3did_flat_Feb_15_2009.dat'
         parse_3did(did_TEMP, engine_3DID)
-        # log_load.info('3DID flat file has been parsed and data inserted into DB.')
-        print '3DID parsed.'
+        log_load.debug('3DID flat file has been parsed and data inserted into DB.')
     else:
-        # log_load.info('3DID data has not been created/updated due to options set.')
-        print '3DID NOT parsed.'
+        log_load.debug('3DID data has not been created/updated due to options set.')
     
     if options.compare:
         # Retrieve both interacting PDB|chain from DIP
