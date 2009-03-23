@@ -19,6 +19,13 @@ from sqlalchemy.schema import UniqueConstraint, Index
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
+import logging
+import logging.config
+
+# Logging configuration
+logging.config.fileConfig("log/logging.conf")
+log_load = logging.getLogger('load')
+
 
 meta = MetaData()
 Base = declarative_base(metadata=meta)
@@ -149,20 +156,32 @@ class Interacting_PDBs(Base):
 # self.residue_second)
 
 
-def parse_3did(threedid_file, engine):
-    try:
-        threedid_file_handler = open(threedid_file)
-    except IOError:
-        print 'There is no such file (flat file with 3DID interactions): %s' % threedid_file
-        # log_load.exception('There is no such file (flat file with 3DID interactions): %s' % threedid_file)
-
+def get_session(verbose, test):
+    """docstring for get_session"""
+    if test:
+        engine = create_engine('sqlite:///:memory:', echo=verbose)
+        log_load.debug('DB in RAM.')
+    else:
+        engine = create_engine('sqlite:///DB/3did.db', echo=verbose)
+        log_load.debug('DB stored in file: %s' % 'DB/3did.db')
+    
     # Create TABLEs: Domain, Interaction, PDB, Interacting_PDBs
     meta.create_all(engine)
     
     # Create session to be used with INSERTs
     Session_3DID = sessionmaker(bind=engine)
     session_3DID = Session_3DID()
-        
+    
+    return session_3DID
+
+
+def parse_3did(threedid_file, session_3DID):
+    try:
+        threedid_file_handler = open(threedid_file)
+    except IOError:
+        log_load.exception('There is no such file (flat file with 3DID interactions): %s' % threedid_file)
+        # TODO sys.exit ?
+
     for line in threedid_file_handler:
         if line.startswith('#=ID'):
             pfams = line.split('\t')
@@ -314,6 +333,64 @@ def parse_3did(threedid_file, engine):
         elif line.startswith('//'):
             pass
 
+
+def both_interacting_from_3DID(session_3DID):
+    """docstring for fname"""
+    p1 = aliased(PDB, name='p1')
+    p2 = aliased(PDB, name='p2')
+    i1 = aliased(Interacting_PDBs, name='i1')
+    i2 = aliased(Interacting_PDBs, name='i2')
+
+    # SELECT p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq
+    # FROM PDB as p1, Interacting_PDBs as i1, PDB as p2, Interacting_PDBs as i2
+    # WHERE p1.id = i1.PDB_first_id
+    # AND p2.id = i2.PDB_second_id
+    # AND i1.id = i2.id;
+
+    interactions_3DID = session_3DID.query(p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq).filter(p1.id==i1.PDB_first_id).filter(p2.id==i2.PDB_second_id).filter(i1.id==i2.id).all()
+
+
+def most_interacting_domains_from_3DID(session_3DID):
+    """docstring for most_interacting_domains_from_3DID"""
+    p1 = aliased(PDB, name='p1')
+    p2 = aliased(PDB, name='p2')
+    i1 = aliased(Interacting_PDBs, name='i1')
+    i2 = aliased(Interacting_PDBs, name='i2')
+    d1 = func.count(p1.domain_id).label('d1')
+    d2 = func.count(p2.domain_id).label('d2')
+
+    # SELECT p1.domain_id, p2.domain_id, COUNT(p1.domain_id) AS d1, COUNT(p2.domain_id) AS d2
+    # FROM PDB AS p1, Interacting_PDBs AS i1, PDB AS p2, Interacting_PDBs AS i2
+    # WHERE p1.id = i1.PDB_first_id
+    # AND p2.id = i2.PDB_second_id
+    # AND i1.id = i2.id
+    # GROUP BY p1.domain_id, p2.domain_id
+    # HAVING d1 > 100 AND d2 > 100
+    # ORDER BY d1, d2;
+    
+    most_interacting = session_3DID.query(p1.domain_id, p2.domain_id, d1, d2).filter(p1.id==i1.PDB_first_id).filter(p2.id== i2.PDB_second_id).filter(i1.id==i2.id).group_by(p1.domain_id, p2.domain_id).having(d1 > 100).having(d2 > 100).order_by(d1, d2).all()
+    
+    return most_interacting
+    
+def most_interacting_interfaces_from_3DID(session_3DID, domain_one, domain_two):
+    """docstring for most_interacting_interfaces_from_3DID"""
+    p1 = aliased(PDB, name='p1')
+    p2 = aliased(PDB, name='p2')
+    i1 = aliased(Interacting_PDBs, name='i1')
+    i2 = aliased(Interacting_PDBs, name='i2')
+    
+    # SELECT p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq
+    # FROM PDB AS p1, Interacting_PDBs AS i1, PDB AS p2, Interacting_PDBs AS i2
+    # WHERE p1.id = i1.PDB_first_id
+    # AND p2.id = i2.PDB_second_id
+    # AND i1.id = i2.id
+    # AND p1.domain_id=489 AND p2.domain_id=489;
+    
+    most_interacting_interfaces = session_3DID.query(p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq).filter(p1.id==i1.PDB_first_id).filter(p2.id==i2.PDB_second_id).filter(i1.id==i2.id).filter(p1.domain_id==most_interacting_domain_one).filter(p2.domain_id==most_interacting_domain_two).all()
+    
+    return most_interacting_interfaces
+    
+
 if __name__ == "__main__":
-    'This module is supposed only to be imported.'
+    print 'This module is supposed only to be imported.'
     # TODO insert tests here
