@@ -1,5 +1,4 @@
 .DS_Store
 *.pyc
-*.db
 biketextmate.log
 log/warnings_errors.log

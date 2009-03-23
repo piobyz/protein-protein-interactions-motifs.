@@ -108,24 +108,24 @@ Run tests in tests/ .
         file_name = os.path.basename(args[0]).split('.')[0]
         
         # Get the DB session (run meta.create_all(engine) and return session)
-        session = DB_DIP.get_session(file_name, options.echo, options.test)
+        session_DIP = DB_DIP.get_session(file_name, options.echo, options.test)
         
         # This means user has a *.mif25 file and we should parse it and store in DB
         # SAX parsing DIP's *.mif25 file and putting it in <species date>.db
-        DB_DIP.sax_parse(input_file, session)
+        DB_DIP.sax_parse(input_file, session_DIP)
     
     if options.uniprot or options.uniseq:
-        session = DB_DIP.get_session(file_name, options.echo, options.test)
+        # session_DIP = DB_DIP.get_session(file_name, options.echo, options.test)
 
         if options.uniprot:
             # Create PDB_UniProt with mappings between each PDB+chain and UniProt
-            DB_DIP.pdb2uniprot(session)
+            DB_DIP.pdb2uniprot(session_DIP)
             log_load.debug('PDB to UniProt mapping DB has been created.')
         if options.uniseq:
             # Feed the PDB_UniProt TABLE with sequences for each UniProt
             # FIXME Not sure if this should be a sepate step OR *always* connected with the one above
             # and this file is common to all *.mif25 so there is no need to generate more than 1!!
-            DB_DIP.uniprot_sequence(session)
+            DB_DIP.uniprot_sequence(session_DIP)
             log_load.debug('Sequence for each UniProt has been transfered.')
     else:
         log_load.debug('PDB to UniProt mapping has NOT been applied in this run.')
@@ -145,7 +145,7 @@ Run tests in tests/ .
             log_load.debug('3DID data has not been created/updated due to options set.')
     
         if options.compare:
-            interactions_DIP = DB_DIP.both_interacting_from_DIP(session_3DID)
+            interactions_DIP = DB_DIP.both_interacting_from_DIP(session_DIP)
     
             # all_interacting_DIP format: [(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), ...]
             reversed_interactions_without_duplicates = DB_DIP.create_reversed_interactions_removing_duplicates(interactions_DIP)
@@ -158,7 +158,7 @@ Run tests in tests/ .
                 except IOError:
                     log_load.exception('File not found: %s' % options.jena)
                     # TODO Should stop 'compare routine' at this point ?
-                    # TODO Provide info (and files themself) where JENA files are located
+                    # TODO Provide info (and files themselfs) where JENA files are located
     
                 misc.compare_interactions(dip_interactions_source=interactions_DIP, jena_interactions_source=interactions_JENA, \
                                         three_did_interactions_source=interactions_3DID, jena=True)
