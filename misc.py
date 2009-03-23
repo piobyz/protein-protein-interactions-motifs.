@@ -1,6 +1,8 @@
 import logging
 import logging.config
 
+import random # random.choice in output_fasta_file()
+
 # Logging configuration
 logging.config.fileConfig("log/logging.conf")
 log_load = logging.getLogger('load')
@@ -90,23 +92,62 @@ def compare_interactions(dip_interactions_source=None, three_did_interactions_so
     log_results.info('Results written to: %s' % results_handler.name)
 
 
-def output_fasta_file(most_interacting_interfaces):
-    """docstring for output_fasta_file"""
+def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
+    """Creates FASTA file with true positives OR true negatives from most interacting pairs of 3DID domains."""
     # Create FASTA file with interacting domain pairs interfaces sequence
-    try:
-        fasta_output = open('results/most_interacting_domain_pairs_interfaces.fa', 'w')
-    except IOError:
-        log_load.exception("Unable to create a file: %s " % "results/most_interacting_domain_pairs_interfaces.fa")
+    if true_negatives_set:
+        try:
+            fasta_output = open('results/most_interacting_domain_pairs_interfaces-TN.fa', 'w')
+        except IOError:
+            log_load.exception("Unable to create a file: %s " % "results/most_interacting_domain_pairs_interfaces-TN.fa")
+            
+        interactors = []
+        
+        # Put each interactor from interacting pair of domains in one list
+        for entry in most_interacting_interfaces:
+            pdb_one = entry[0].strip()
+            chain_one = entry[1].strip()
+            seq_one = entry[5].strip()
+            
+            interactors.append((pdb_one, chain_one, seq_one))
 
-    for entry in most_interacting_interfaces:
-        pdb_one = entry[0].strip()
-        chain_one = entry[1].strip()
-        pdb_two = entry[2].strip()
-        chain_two = entry[3].strip()
-        interface = entry[4].strip()
+            pdb_two = entry[2].strip()
+            chain_two = entry[3].strip()
+            seq_two = entry[6].strip()
+            
+            interactors.append((pdb_two, chain_two, seq_two))
+        
+        # Randomly choose two interactors and store them as (falsely) interacting pair
+        for i in range(len(interactors)/2):
+            interactor_one = random.choice(interactors)
+            interactor_two = random.choice(interactors)
+            
+            pdb_one = interactor_one[0].strip()
+            chain_one = interactor_one[1].strip()
+            seq_one = interactor_one[2].strip()
 
-        to_write = '> %s%s - %s%s\n%s\n' % (pdb_one, chain_one, pdb_two, chain_two, interface)
-        fasta_output.write(to_write)
+            pdb_two = interactor_two[0].strip()
+            chain_two = interactor_two[1].strip()
+            seq_two = interactor_two[2].strip()
+        
+            to_write = '> %s%s - %s%s\n%s%s\n' % (pdb_one, chain_one, pdb_two, chain_two, seq_one, seq_two)
+            fasta_output.write(to_write)
+
+    else:
+        try:
+            fasta_output = open('results/most_interacting_domain_pairs_interfaces.fa', 'w')
+        except IOError:
+            log_load.exception("Unable to create a file: %s " % "results/most_interacting_domain_pairs_interfaces.fa")
+
+        for entry in most_interacting_interfaces:
+            pdb_one = entry[0].strip()
+            chain_one = entry[1].strip()
+            pdb_two = entry[2].strip()
+            chain_two = entry[3].strip()
+            interface = entry[4].strip()
+
+            to_write = '> %s%s - %s%s\n%s\n' % (pdb_one, chain_one, pdb_two, chain_two, interface)
+            fasta_output.write(to_write)
 
     fasta_output.close()
 

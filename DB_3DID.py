@@ -13,11 +13,12 @@ __status__ = "Prototype"
 
 
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, MetaData
-from sqlalchemy.orm import relation, backref, join, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.schema import UniqueConstraint, Index
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relation, backref, join, sessionmaker, aliased
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.schema import UniqueConstraint, Index
+from sqlalchemy.sql import func
 
 import logging
 import logging.config
@@ -386,7 +387,7 @@ def most_interacting_interfaces_from_3DID(session_3DID, domain_one, domain_two):
     # AND i1.id = i2.id
     # AND p1.domain_id=489 AND p2.domain_id=489;
     
-    most_interacting_interfaces = session_3DID.query(p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq).filter(p1.id==i1.PDB_first_id).filter(p2.id==i2.PDB_second_id).filter(i1.id==i2.id).filter(p1.domain_id==most_interacting_domain_one).filter(p2.domain_id==most_interacting_domain_two).all()
+    most_interacting_interfaces = session_3DID.query(p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq, p1.sequence, p2.sequence).filter(p1.id==i1.PDB_first_id).filter(p2.id==i2.PDB_second_id).filter(i1.id==i2.id).filter(p1.domain_id==domain_one).filter(p2.domain_id==domain_two).all()
     
     return most_interacting_interfaces
     

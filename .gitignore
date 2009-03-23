@@ -2,3 +2,5 @@
 *.pyc
 biketextmate.log
 log/warnings_errors.log
+log/results.txt
+results/*

@@ -33,6 +33,7 @@ import misc
 # Logging configuration
 logging.config.fileConfig("log/logging.conf")
 log_load = logging.getLogger('load')
+log_results = logging.getLogger('results')
 
 
 def main():
@@ -88,7 +89,7 @@ Run tests in tests/ .
     # TODO Implement clean.
 
     (options, args) = parser.parse_args()
-    if(len(args) == 0 and not options.uniseq and not options.uniprot and not options.did and not options.compare):
+    if(len(args) == 0 and not options.uniseq and not options.uniprot and not options.did and not options.compare and not options.most):
         parser.print_help()
         sys.exit(1)
 
@@ -178,12 +179,15 @@ Run tests in tests/ .
             most_interacting_domain_one = most_interacting_domains_3DID[-which_most][0]
             most_interacting_domain_two = most_interacting_domains_3DID[-which_most][1]
         
-            most_interacting_interfaces = most_interacting_interfaces_from_3DID(session_3DID,\
+            most_interacting_interfaces = DB_3DID.most_interacting_interfaces_from_3DID(session_3DID,\
                     most_interacting_domain_one, most_interacting_domain_two)
 
             misc.output_fasta_file(most_interacting_interfaces)
+            log_results.info('Most interacting interfaces has been saved in results/most_interacting_domain_pairs_interfaces.fa')
+            misc.output_fasta_file(most_interacting_interfaces, true_negatives_set=True)
+            log_results.info('Most interacting interfaces true negatives has been saved in results/most_interacting_domain_pairs_interfaces-TN.fa')
         
-            misc.calculate_identity()
+            # misc.calculate_identity()
 
         
 if __name__ == '__main__':
