@@ -102,9 +102,9 @@ TODO: Create nice looking report from logged results + documentation / doctests 
 
 TODO: Write /tests using nose
 
+TODO: create setup.py
+
 TODO: !!! check whether there are some issue with case sensitive PDB IDs in every file I use
-
-
 
 Workflow:
 1. assume we have downloaded \*.mif25 files from DIP for every species
@@ -132,7 +132,7 @@ parsing and DBDIP.py for Structures and UniProt mapping)
 
 8. JENA single line PDBs are prepared manually copying PDBs directly from their site and extracting PDB IDs, results stored in /JENA
 
-9. Finally, run compare_pdb_list.py (see TODO above...) with DIP vs 3DID, DIP vs JENA, JENA vs 3DID
+9. Finally, run compare_pdb_list.py with DIP vs 3DID, DIP vs JENA, JENA vs 3DID
 
 10. To find most interacting pair of domains: 3DID-most_interacting_domains.sql
 
