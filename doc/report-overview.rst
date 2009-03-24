@@ -753,6 +753,43 @@ Most interactions classifier 50% (3,0), (3,1)
 
 
 
+[results after random pairs choice implementation]
+2009-03-23 14:42:49,164 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(78)[motifkernel.loadData]: INFO Dividing data/most_interacting_domain_pairs_interfaces.fa into TEST +: 939, TRAININ
+G +: 940
+2009-03-23 14:54:07,263 /Users/piotr/Projects/Thesis/Spring/MotifKernel/preparedata.py(102)[motifkernel.loadData]: INFO data/most_interacting_domain_pairs_interfaces-TN.fa divided into: TEST -: 939, TRA
+INING -: 940
+2009-03-23 15:10:57,126 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(50)[motifkernel.svm]: INFO +++RADIAL KERNEL+++
+2009-03-23 15:10:57,126 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(58)[motifkernel.svm]: INFO ====most_interacting_domain_pairs_interfaces: SVM (3, 0) 50 % training set====
+2009-03-23 19:28:08,512 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(121)[motifkernel.svm]: INFO Training: extras/svm-train -c 2.0 -g 0.03125 output/libsvm_training.input.scale output/libsvm_t
+raining.input.model
+2009-03-23 19:31:43,641 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 50% (939/1878) (classification)
+
+2009-03-23 19:31:45,610 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 939, all negatives: 939
+2009-03-23 19:31:45,648 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 1878
+2009-03-23 19:31:45,704 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(52)[motifkernel.svm]: INFO +++LINEAR KERNEL+++
+2009-03-23 19:31:45,705 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(58)[motifkernel.svm]: INFO ====most_interacting_domain_pairs_interfaces: SVM (3, 0) 50 % training set====
+2009-03-23 19:37:06,572 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 72.6837% (1365/1878) (classification)
+
+2009-03-23 19:37:07,336 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 939, all negatives: 939
+2009-03-23 19:37:07,341 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 1878
+2009-03-23 19:40:05,827 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(50)[motifkernel.svm]: INFO +++RADIAL KERNEL+++
+2009-03-23 19:40:05,920 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(60)[motifkernel.svm]: INFO ====SVM (3, 1) 50 % training set====
+2009-03-23 23:44:49,118 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(121)[motifkernel.svm]: INFO Training: extras/svm-train -c 2.0 -g 0.03125 output/libsvm_training.input.scale output/libsvm_t
+raining.input.model
+2009-03-23 23:48:17,567 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 50% (939/1878) (classification)
+
+2009-03-23 23:48:19,781 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 939, all negatives: 939
+2009-03-23 23:48:19,830 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 1878
+2009-03-23 23:48:19,907 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(52)[motifkernel.svm]: INFO +++LINEAR KERNEL+++
+2009-03-23 23:48:19,919 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(60)[motifkernel.svm]: INFO ====SVM (3, 1) 50 % training set====
+2009-03-23 23:53:27,807 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(141)[motifkernel.svm]: INFO Accuracy = 61.1289% (1148/1878) (classification)
+
+2009-03-23 23:53:28,649 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(167)[motifkernel.svm]: INFO Number of all positives: 939, all negatives: 939
+2009-03-23 23:53:28,653 /Users/piotr/Projects/Thesis/Spring/MotifKernel/svm.py(176)[motifkernel.svm]: INFO Predicted labels length: 1878
+
+
+
+
 
 
 3. IMEx

@@ -150,19 +150,3 @@ def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
             fasta_output.write(to_write)
 
     fasta_output.close()
-
-
-def calculate_sequence_identity():
-    """docstring for calculate_sequence_identity"""
-    # Calculate identity % between 2 sequences
-
-    from Bio import pairwise2
-
-    alignments = pairwise2.align.globalxx("ACCGT", "ACG")
-    # x No parameters.  Identical characters have score of 1, otherwise 0.
-    # x No gap penalties.
-    # http://www.biopython.org/DIST/docs/api/Bio.pairwise2-module.html
-
-    identity = (alignments[0][2] / (alignments[0][4]+1))*100
-    
-    return identity
