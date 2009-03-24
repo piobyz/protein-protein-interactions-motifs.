@@ -187,9 +187,6 @@ Run tests in tests/ .
             misc.output_fasta_file(most_interacting_interfaces, true_negatives_set=True)
             log_results.info('Most interacting interfaces true negatives has been saved in results/most_interacting_domain_pairs_interfaces-TN.fa')
         
-            # misc.calculate_identity()
-
-        
 if __name__ == '__main__':
     main()
     log_load.info('END OF SCRIPT.')
