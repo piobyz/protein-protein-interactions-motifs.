@@ -7,7 +7,7 @@ __license__ = "GPL"
 __version__ = "0.1.0"
 __maintainer__ = "Piotr Byzia"
 __email__ = "piotr.byzia@gmail.com"
-__status__ = "Prototype"
+__status__ = "Alpha"
 
 
 import logging
@@ -206,13 +206,20 @@ class DIPHandler(ContentHandler):
                 self.session.rollback()
 
 def get_session(db_name, verbose, test):
-    """docstring for get_session"""
+    """Returns current DB session from SQLAlchemy pool.
+    
+    >>> get_session('Mmusc20090126', False, True) #doctest: +ELLIPSIS
+    <sqlalchemy.orm.session.Session object at 0x...>
+    
+    >>> get_session('Mmusc20090126', False, False) #doctest: +ELLIPSIS
+    <sqlalchemy.orm.session.Session object at 0x...>
+    """
     if test:
         engine = create_engine('sqlite:///:memory:', echo=verbose)
         log_load.debug('DB in RAM.')
     else:
-        engine = create_engine('sqlite:///' + 'DB/' + db_name + '.db2', echo=verbose)
-        log_load.debug('DB stored in file: %s' % 'DB/' + db_name + '.db2')
+        engine = create_engine('sqlite:///' + 'DB/' + db_name + '.db', echo=verbose)
+        log_load.debug('DB stored in file: %s' % 'DB/' + db_name + '.db')
     
     # Create TABLES: Structures, Interactions, Interactors, PDB_UniProt, UniProtSeq
     meta.create_all(engine)
@@ -327,14 +334,22 @@ def both_interacting_from_DIP(current_session):
 
 
 def uniq(alist):
-    """Given alist returns non redundant list."""
+    """Given alist returns non redundant list.
+    
+    >>> uniq([(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), (u'1e9z', u'A', u'1e9z', u'A')])
+    [(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A')]
+    """
     set = {}
     return [set.setdefault(e, e) for e in alist if e not in set]
 
 
 def create_reversed_interactions_removing_duplicates(dip_interactions_source):
     """Takes a list of interacting PDB1|chain1|PDB2|chain2 and appends PDB2|chain2|PDB1|chain1
-    finally removing duplicates."""
+    finally removing duplicates.
+    
+    >>> create_reversed_interactions_removing_duplicates([(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), (u'1e9z', u'A', u'1e9z', u'A')])
+    [u'1e9z|A|1e9z|A', u'2zl4|N|1klx|A', u'1klx|A|2zl4|N']
+    """
     with_possible_duplicates = []
 
     # Because we need to consider interactions where 2 pdb+chain are listed also in the reverse order
@@ -345,8 +360,8 @@ def create_reversed_interactions_removing_duplicates(dip_interactions_source):
         second_pdb = entry[2].strip()
         second_chain = entry[3].strip()
 
-        non_reversed_interaction = '%s|%s|%s|%s\n' % (first_pdb, first_chain, second_pdb, second_chain)
-        reversed_interaction = '%s|%s|%s|%s\n' % (second_pdb, second_chain, first_pdb, first_chain)
+        non_reversed_interaction = '%s|%s|%s|%s' % (first_pdb, first_chain, second_pdb, second_chain)
+        reversed_interaction = '%s|%s|%s|%s' % (second_pdb, second_chain, first_pdb, first_chain)
 
         with_possible_duplicates.append(non_reversed_interaction)
         with_possible_duplicates.append(reversed_interaction)
@@ -358,5 +373,9 @@ def create_reversed_interactions_removing_duplicates(dip_interactions_source):
 
 
 if __name__ == "__main__":
-    print 'This module is supposed only to be imported.'
-    # TODO insert tests here
+    try:
+        import nose
+        nose.main(argv=['', '--where=.', '--verbose', '--with-doctest', '--with-coverage'])
+        # TODO get rid of not-mine modules in code coverage report, see nosetests -h options
+    except ImportError:
+        print 'This package uses nose module for testing (which you do not have installed).'
