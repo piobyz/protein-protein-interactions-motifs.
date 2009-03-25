@@ -147,8 +147,8 @@ Run tests in tests/ .
     
         if options.compare:
             interactions_DIP = DB_DIP.both_interacting_from_DIP(session_DIP)
-    
-            # all_interacting_DIP format: [(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), ...]
+
+            # interactions_DIP format: [(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), ...]
             reversed_interactions_without_duplicates = DB_DIP.create_reversed_interactions_removing_duplicates(interactions_DIP)
     
             interactions_3DID = DB_3DID.both_interacting_from_3DID(session_3DID)
@@ -171,7 +171,9 @@ Run tests in tests/ .
             try:
                 which_most = int(options.most)
             except ValueError:
-                log_load.exception('Wrong value for the NUMBER of the most interacting pair of domains: %s' % options.most)
+                log_load.exception('Wrong value for the NUMBER of the most interacting pair of domains: %s. Calculation will be done using default = 1.' % options.most)
+                # default value is set to 1 (the one with the most interactions)
+                which_most = 1
 
             most_interacting_domains_3DID = DB_3DID.most_interacting_domains_from_3DID(session_3DID)
         
@@ -189,4 +191,5 @@ Run tests in tests/ .
         
 if __name__ == '__main__':
     main()
-    log_load.info('END OF SCRIPT.')
+    log_load.debug('END OF SCRIPT.')
+    sys.stdout.write('Results has been written to log/results.txt\nDebug log has been written to log/warnings_errors.log')

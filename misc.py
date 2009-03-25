@@ -11,13 +11,16 @@ log_results = logging.getLogger('results')
 
 def compare_interactions(dip_interactions_source=None, three_did_interactions_source=None, jena_interactions_source=None, \
                             jena=False):
-    """Take interactions from one set (DIP, 3DID or JENA) and find overlapping interactions in the other one."""
+    """Take interactions from one set (DIP, 3DID or JENA) and find overlapping interactions in the other one.
+
+    >>> compare_interactions(dip_interactions_source=[(u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'), (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'), (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD')], three_did_interactions_source=[(u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD')])
+    """
     dip_interactions = {}
     three_did_interactions = {}
     jena_interactions = {}
 
     # NOTE: JENA has only PDB ids - without chains
-    # Final results will be written here in fasta format, 1st line: interactor's PDB1chain1 - PDB2chain2
+    # Final results will be written here in fasta format, where 1st line is: interactor's PDB1chain1 - PDB2chain2
     try:
         results_handler = open('results/overlapping-DIP-3DID.fa', 'w')
     except IOError:
@@ -35,7 +38,7 @@ def compare_interactions(dip_interactions_source=None, three_did_interactions_so
                 for entry in dip_interactions_source:
                     dip_interactions[entry] = ''
                     number_of_dip_interactions += 1
-        log_results.info('Number of DIP interactions: %s' % number_of_dip_interactions)
+            log_results.info('Number of DIP interactions: %s' % number_of_dip_interactions)
 
     if three_did_interactions_source:
         number_of_3did_interactions = 0
@@ -56,7 +59,7 @@ def compare_interactions(dip_interactions_source=None, three_did_interactions_so
         for entry in jena_interactions_source:
             jena_interactions[entry] = ''
             number_of_jena_interactions += 1
-    log_results.info('Number of JENA interactions: %s' % number_of_jena_interactions)
+        log_results.info('Number of JENA interactions: %s' % number_of_jena_interactions)
 
     # Find interactions overlapping in two sets
     if jena:
@@ -93,7 +96,11 @@ def compare_interactions(dip_interactions_source=None, three_did_interactions_so
 
 
 def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
-    """Creates FASTA file with true positives OR true negatives from most interacting pairs of 3DID domains."""
+    """Creates FASTA file with true positives OR true negatives from most interacting pairs of 3DID domains.
+    
+    >>> output_fasta_file([(u'12e8', u'H', u'12e8', u'L', u'KKKDDKQQQDDTAFDDNNKFDPFF', u'KKKDDKQQQDDT', u'AFDDNNKFDPFF'), (u'12e8', u'M', u'12e8', u'P', u'ATGLKKHHHHTFFFFFFFPPAVQSSSPFFVSTNNTSTFSATSMSSASLTFFN', u'ATGLKKHHHHTFFFFFFFPPAVQSSS', u'PFFVSTNNTSTFSATSMSSASLTFFN'), (u'15c8', u'H', u'15c8', u'L', u'PSFFFFFFNNNLSSSAATTTSSMSTAKTLGFSSHSHVFPAFPHTFHFFFQ', u'PSFFFFFFNNNLSSSAATTTSSMST', u'AKTLGFSSHSHVFPAFPHTFHFFFQ'), (u'1a0q', u'H', u'1a0q', u'L', u'ATLGLKKHHHHTFFFFFFPPAVLQQQSSSPFFFVSTNNDSTFSWTSSSWSLLGLTFFN', u'ATLGLKKHHHHTFFFFFFPPAVLQQQSSS', u'PFFFVSTNNDSTFSWTSSSWSLLGLTFFN'), (u'1a1m', u'A', u'1a1m', u'B', u'YYYPPLLATTLLLKKHHHHHHTFFFFFFPPAVVVQQTSSSSTSEQSEVFPFNFVTSTNNTDTSTFSWTSSSWSLNSVLLFSFNN', u'YYYPPLLATTLLLKKHHHHHHTFFFFFFPPAVVVQQTSSSST', u'SEQSEVFPFNFVTSTNNTDTSTFSWTSSSWSLNSVLLFSFNN')])
+
+    """
     # Create FASTA file with interacting domain pairs interfaces sequence
     if true_negatives_set:
         try:
@@ -132,7 +139,6 @@ def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
         
             to_write = '> %s%s - %s%s\n%s%s\n' % (pdb_one, chain_one, pdb_two, chain_two, seq_one, seq_two)
             fasta_output.write(to_write)
-
     else:
         try:
             fasta_output = open('results/most_interacting_domain_pairs_interfaces.fa', 'w')
@@ -148,5 +154,14 @@ def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
 
             to_write = '> %s%s - %s%s\n%s\n' % (pdb_one, chain_one, pdb_two, chain_two, interface)
             fasta_output.write(to_write)
-
     fasta_output.close()
+
+
+if __name__ == "__main__":
+    try:
+        import nose
+        nose.main(argv=['', '--where=.', '--verbose', '--with-doctest', '--with-coverage'])
+        # TODO get rid of not-mine modules in code coverage report, see nosetests -h options
+        # TODO why the 1st argument in argv is not taken into account??
+    except ImportError:
+        print 'This package uses nose module for testing (which you do not have installed).'

@@ -354,6 +354,8 @@ def both_interacting_from_3DID(session_3DID):
     # AND i1.id = i2.id;
 
     interactions_3DID = session_3DID.query(p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq).filter(p1.id==i1.PDB_first_id).filter(p2.id==i2.PDB_second_id).filter(i1.id==i2.id).all()
+    
+    return interactions_3DID
 
 
 def most_interacting_domains_from_3DID(session_3DID):
