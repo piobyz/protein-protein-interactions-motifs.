@@ -158,7 +158,14 @@ class Interacting_PDBs(Base):
 
 
 def get_session(verbose, test):
-    """docstring for get_session"""
+    """Returns current DB session from SQLAlchemy pool.
+    
+    >>> get_session(False, True) #doctest: +ELLIPSIS
+    <sqlalchemy.orm.session.Session object at 0x...>
+    
+    >>> get_session(False, False) #doctest: +ELLIPSIS
+    <sqlalchemy.orm.session.Session object at 0x...>
+    """
     if test:
         engine = create_engine('sqlite:///:memory:', echo=verbose)
         log_load.debug('DB in RAM.')
@@ -299,8 +306,6 @@ def parse_3did(threedid_file, session_3DID):
             first_interface_seq = []
             second_interface_seq = []
 
-            # print pdb_name, first_chain, first_chain_range, second_chain, second_chain_range, score, Zscore
-
         elif not line.startswith('//'):
             contact_residues = line.split('\t')
 
@@ -336,7 +341,7 @@ def parse_3did(threedid_file, session_3DID):
 
 
 def both_interacting_from_3DID(session_3DID):
-    """docstring for fname"""
+    """Get a list of all interacting pairs from 3DID (with their joined sequences)."""
     p1 = aliased(PDB, name='p1')
     p2 = aliased(PDB, name='p2')
     i1 = aliased(Interacting_PDBs, name='i1')
@@ -352,7 +357,7 @@ def both_interacting_from_3DID(session_3DID):
 
 
 def most_interacting_domains_from_3DID(session_3DID):
-    """docstring for most_interacting_domains_from_3DID"""
+    """Returns an ordered list of all interacting pairs of domains where minimum number of interactions is 100."""
     p1 = aliased(PDB, name='p1')
     p2 = aliased(PDB, name='p2')
     i1 = aliased(Interacting_PDBs, name='i1')
@@ -374,7 +379,7 @@ def most_interacting_domains_from_3DID(session_3DID):
     return most_interacting
     
 def most_interacting_interfaces_from_3DID(session_3DID, domain_one, domain_two):
-    """docstring for most_interacting_interfaces_from_3DID"""
+    """Returns interactions for one particular pair of domains with their joined interfaces' sequence."""
     p1 = aliased(PDB, name='p1')
     p2 = aliased(PDB, name='p2')
     i1 = aliased(Interacting_PDBs, name='i1')
@@ -393,5 +398,10 @@ def most_interacting_interfaces_from_3DID(session_3DID, domain_one, domain_two):
     
 
 if __name__ == "__main__":
-    print 'This module is supposed only to be imported.'
-    # TODO insert tests here
+    try:
+        import nose
+        nose.main(argv=['', '--where=.', '--verbose', '--with-doctest', '--with-coverage'])
+        # TODO get rid of not-mine modules in code coverage report, see nosetests -h options
+        # TODO why the 1st argument in argv is not taken into account??
+    except ImportError:
+        print 'This package uses nose module for testing (which you do not have installed).'
