@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-SQLAlchemy mappers for DIP module.
+Sample workflow for PPIM package.
 """
 
 __author__ = "Piotr Byzia"

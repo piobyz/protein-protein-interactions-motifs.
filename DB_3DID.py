@@ -9,7 +9,7 @@ __license__ = "GPL"
 __version__ = "0.1.0"
 __maintainer__ = "Piotr Byzia"
 __email__ = "piotr.byzia@gmail.com"
-__status__ = "Prototype"
+__status__ = "Alpha"
 
 
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, MetaData
@@ -402,8 +402,6 @@ def most_interacting_interfaces_from_3DID(session_3DID, domain_one, domain_two):
 if __name__ == "__main__":
     try:
         import nose
-        nose.main(argv=['', '--where=.', '--verbose', '--with-doctest', '--with-coverage'])
-        # TODO get rid of not-mine modules in code coverage report, see nosetests -h options
-        # TODO why the 1st argument in argv is not taken into account??
+        nose.main(argv=['', '--verbose', '--with-doctest', '--with-coverage', '--cover-inclusive', '--cover-package=PPIM', '--detailed-errors', '--with-profile'])
     except ImportError:
-        print 'This package uses nose module for testing (which you do not have installed).'
+        raise Exception("This package uses nose module for testing (which you do not have installed).")

@@ -102,7 +102,7 @@ TODO: Create nice looking report from logged results + documentation / doctests 
 
 TODO: Write /tests using nose
 
-TODO: create setup.py
+TODO: create setup.py (see: http://github.com/ctb/pygr/blob/4a3f16fbab1647b8da15c8ab1b930654de8f8e01/setup.py)
 
 TODO: !!! check whether there are some issue with case sensitive PDB IDs in every file I use
 

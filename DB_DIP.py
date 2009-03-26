@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
-
+"""
+Parser for DIP flat file connected with mapper to SQLAlchemy classes.
+"""
 __author__ = "Piotr Byzia"
 __credits__ = ["Hugh Shanahan"]
 __license__ = "GPL"
@@ -375,7 +377,6 @@ def create_reversed_interactions_removing_duplicates(dip_interactions_source):
 if __name__ == "__main__":
     try:
         import nose
-        nose.main(argv=['', '--where=.', '--verbose', '--with-doctest', '--with-coverage'])
-        # TODO get rid of not-mine modules in code coverage report, see nosetests -h options
+        nose.main(argv=['', '--verbose', '--with-doctest', '--with-coverage', '--cover-inclusive', '--cover-package=PPIM', '--detailed-errors', '--with-profile'])
     except ImportError:
-        print 'This package uses nose module for testing (which you do not have installed).'
+        raise Exception("This package uses nose module for testing (which you do not have installed).")
