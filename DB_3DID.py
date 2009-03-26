@@ -182,6 +182,52 @@ def get_session(verbose, test):
     
     return session_3DID
 
+def parsing_3did_ID(line, kind):
+    """Parse line from 3DID flat file beginning with particular characters.
+    # >>> parsing_3did_ID('#=ID\t1-cysPrx_C\t1-cysPrx_C\t(PF10417.1@Pfam\tPF10417.1@Pfam)', kind='ID')
+    # ('1-cysPrx_C', '1-cysPrx_C', 'PF10417', '1', 'PF10417', '1')
+    # TODO problems with \t?? Try to load single line directly from file? In unit-tests?
+    # TODO The same for the 3 other cases.
+    """
+    if kind=='ID':
+        pfams = line.split('\t')
+
+        first_pfamA = pfams[1].strip()
+        second_pfamA = pfams[2].strip()
+
+        first_pfamB = pfams[3].strip().lstrip('(').rstrip('@Pfam').split('.')[0]
+        first_family_version = pfams[3].strip().lstrip('(').rstrip('@Pfam').split('.')[1]
+        second_pfamB = pfams[4].strip().rstrip('@Pfam)').split('.')[0]
+        second_family_version = pfams[4].strip().rstrip('@Pfam)').split('.')[1]
+        
+        return first_pfamA, second_pfamA, first_pfamB, first_family_version, second_pfamB, second_family_version
+
+    if kind=='3D':
+        chains = line.split('\t')
+
+        pdb_name = chains[1]
+
+        first_chain = chains[2].split(':')[0]
+        first_chain_range = chains[2].split(':')[1]
+
+        second_chain = chains[3].split(':')[0]
+        second_chain_range = chains[3].split(':')[1]
+        
+        return pdb_name, first_chain, first_chain_range, second_chain, second_chain_range
+        
+    if kind=='//':
+        contact_residues = line.split('\t')
+
+        first_interface_residue = contact_residues[0].strip()
+        first_interface_residue_position = contact_residues[2].strip()
+
+        second_interface_residue = contact_residues[1].strip()
+        second_interface_residue_position = contact_residues[3].strip()
+
+        contact_type = contact_residues[4].strip()
+        
+        return first_interface_residue, first_interface_residue_position, second_interface_residue, \
+                second_interface_residue_position, contact_type
 
 def parse_3did(threedid_file, session_3DID):
     try:
@@ -192,15 +238,8 @@ def parse_3did(threedid_file, session_3DID):
 
     for line in threedid_file_handler:
         if line.startswith('#=ID'):
-            pfams = line.split('\t')
-
-            first_pfamA = pfams[1].strip()
-            second_pfamA = pfams[2].strip()
-
-            first_pfamB = pfams[3].strip().lstrip('(').rstrip('@Pfam').split('.')[0]
-            first_family_version = pfams[3].strip().lstrip('(').rstrip('@Pfam').split('.')[1]
-            second_pfamB = pfams[4].strip().rstrip('@Pfam)').split('.')[0]
-            second_family_version = pfams[4].strip().rstrip('@Pfam)').split('.')[1]
+            first_pfamA, second_pfamA, first_pfamB, first_family_version, second_pfamB, second_family_version \
+            = parsing_single_3did_line(line, kind='ID')
 
             ######## TABLE Domains ########
             try:
@@ -233,23 +272,16 @@ def parse_3did(threedid_file, session_3DID):
                 session_3DID.add(new_interaction)
                 session_3DID.commit()
             except IntegrityError:
-                print 'Interaction between domains ids: %s and %s is already in the DB.' % \
-                (first_domain_last_id, second_domain_last_id)
+                log_load.exception('Interaction between domains ids: %s and %s is already in the DB.' % \
+                (first_domain_last_id, second_domain_last_id))
                 session_3DID.rollback()
             except UnboundLocalError:
-                pass
+                log_load.exception('UnboundLocalError')
 
         elif line.startswith('#=3D'):
-            chains = line.split('\t')
-
-            pdb_name = chains[1]
-
-            first_chain = chains[2].split(':')[0]
-            first_chain_range = chains[2].split(':')[1]
-
-            second_chain = chains[3].split(':')[0]
-            second_chain_range = chains[3].split(':')[1]
-
+            pdb_name, first_chain, first_chain_range, second_chain, second_chain_range \
+            = parsing_single_3did_line(line, kind='3D')
+            
             # First loop will be empty, for each next run it will contain a whole sequence for each interface
             try:
                 if first_interface_seq and second_interface_seq:
@@ -298,7 +330,7 @@ def parse_3did(threedid_file, session_3DID):
                     except IntegrityError:
                         session_3DID.rollback()
             except Exception, e:
-                print "Most probably it's 1st run, so there is no interface to insert yet.", e
+                log_load.exception("Most probably it's 1st run, so there is no interface to insert yet.", e)
             session_3DID.commit()
 
             # Init sequence tables for the1st sequence and then empty each after each #=3D line
@@ -307,15 +339,8 @@ def parse_3did(threedid_file, session_3DID):
             second_interface_seq = []
 
         elif not line.startswith('//'):
-            contact_residues = line.split('\t')
-
-            first_interface_residue = contact_residues[0].strip()
-            first_interface_residue_position = contact_residues[2].strip()
-
-            second_interface_residue = contact_residues[1].strip()
-            second_interface_residue_position = contact_residues[3].strip()
-
-            contact_type = contact_residues[4].strip()
+            first_interface_residue, first_interface_residue_position, second_interface_residue, \
+            second_interface_residue_position, contact_type = parsing_single_3did_line(line, kind='//')
 
             first_interface_seq.append(first_interface_residue)
             second_interface_seq.append(second_interface_residue)
