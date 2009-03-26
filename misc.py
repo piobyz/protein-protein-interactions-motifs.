@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+Miscellaneous tools for PPIM package.
+"""
+
+__author__ = "Piotr Byzia"
+__credits__ = ["Hugh Shanahan"]
+__license__ = "..."
+__version__ = "0.1.0"
+__maintainer__ = "Piotr Byzia"
+__email__ = "piotr.byzia@gmail.com"
+__status__ = "Alpha"
+
 import logging
 import logging.config
 
@@ -9,57 +23,52 @@ log_load = logging.getLogger('load')
 log_results = logging.getLogger('results')
 
 
-def compare_interactions(dip_interactions_source=None, three_did_interactions_source=None, jena_interactions_source=None, \
-                            jena=False):
-    """Take interactions from one set (DIP, 3DID or JENA) and find overlapping interactions in the other one.
+def get_pdbid_chain(source, kind=None, chain=False):
+    """Returns dictionary with interactions. Key is PDB id (), value is ...
+    kind is one-word description of where interactions come from (DIP, 3DID, JENA, etc.).
 
-    >>> compare_interactions(dip_interactions_source=[(u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'), (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'), (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD')], three_did_interactions_source=[(u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD')])
+    >>> get_pdbid_chain([(u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'), (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'), (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'), (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD')], kind='DIP')
+    {u'1n8j': '', u'aa8j': '', u'1ssj': ''}
+
+    >>> get_pdbid_chain([(u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'), (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'), (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'), (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD')], kind='DIP', chain=True)
+    {(u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'): '', (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'): '', (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'): '', (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'): '', (u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'): ''}
     """
-    dip_interactions = {}
-    three_did_interactions = {}
-    jena_interactions = {}
-
+    interactions = {}
+    number_of_interactions = 0
+    
     # NOTE: JENA has only PDB ids - without chains
-    # Final results will be written here in fasta format, where 1st line is: interactor's PDB1chain1 - PDB2chain2
+    if chain:
+        # without including JENA, we can get DIP and 3DID entries directly
+        for entry in source:
+            interactions[entry] = ''
+            number_of_interactions += 1
+    else:
+        for entry in source:
+            # Take only PDB ids (without chains), see NOTE above
+            interactions[entry[0]] = ''
+            interactions[entry[2]] = ''
+            number_of_interactions += 2
+
+    log_results.info('Number of %s interactions: %s' % (kind, number_of_interactions))
+    
+    return interactions
+
+
+def find_overlaps(dip_interactions, three_did_interactions, jena_interactions=None, jena=False):
+    """Returns number of overlapping iternactions from 1,2 or 3 datasets.
+    Writes to FILE overlappinginteractions from DIP and 3DID.
+    
+    >>> find_overlaps({(u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'): '', (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'): '', (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'): '', (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'): '', (u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'): ''}, {(u'1n8j', u'C', u'1n8j', u'X', u'DDDDRKKKRKDKDDDD'): '', (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'E', u'666j', u'F', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'): '', (u'1n8Q', u'i', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'): '', (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'): '', (u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'): ''})
+    4
+    
+    >>> find_overlaps({u'1N8j': '', u'': '', u'1ssj': ''}, {u'1n8j': '', u'AA66': '', u'1ssj': ''}, {u'1n8j': '', u'aa8j': '', u'1ssj': ''}, jena=True)
+    (1, 2)
+    
+    """
     try:
         results_handler = open('results/overlapping-DIP-3DID.fa', 'w')
     except IOError:
         log_load.exception('Problems with creating file: %s' % results_handler)
-
-    if dip_interactions_source:
-        number_of_dip_interactions = 0
-        if jena:
-            for entry in dip_interactions_source:
-                # Take only PDB ids, without chains, see NOTE above
-                dip_interactions[entry[0]] = ''
-                dip_interactions[entry[2]] = ''
-                number_of_dip_interactions += 2
-            else:
-                for entry in dip_interactions_source:
-                    dip_interactions[entry] = ''
-                    number_of_dip_interactions += 1
-            log_results.info('Number of DIP interactions: %s' % number_of_dip_interactions)
-
-    if three_did_interactions_source:
-        number_of_3did_interactions = 0
-        if jena:
-            for entry in three_did_interactions_source:
-                # Take only PDB ids, without chains, see NOTE above
-                three_did_interactions[entry[0]]=''
-                three_did_interactions[entry[2]]=''
-                number_of_3did_interactions += 2
-        else:
-            for entry in three_did_interactions:
-                three_did_interactions[entry] = ''
-                number_of_dip_interactions += 1
-        log_results.info('Number of 3DID interactions: %s' % number_of_3did_interactions)
-
-    if jena_interactions_source:
-        number_of_jena_interactions = 0
-        for entry in jena_interactions_source:
-            jena_interactions[entry] = ''
-            number_of_jena_interactions += 1
-        log_results.info('Number of JENA interactions: %s' % number_of_jena_interactions)
 
     # Find interactions overlapping in two sets
     if jena:
@@ -80,6 +89,8 @@ def compare_interactions(dip_interactions_source=None, three_did_interactions_so
                 log_results.info('Overlapping 3DID-JENA: %s' % to_write)
                 overlapping_3did_jena += 1
         log_results.info('Number of overlapping 3DID-JENA: %s' % overlapping_3did_jena)
+        
+        return overlapping_dip_jena, overlapping_3did_jena
 
     else:
         # Find overlaps in DIP and 3DID
@@ -90,9 +101,44 @@ def compare_interactions(dip_interactions_source=None, three_did_interactions_so
                 results_handler.write(to_write)
                 overlapping_dip_3did += 1
         log_results.info('Number of overlapping DIP-3DID: %s' % overlapping_dip_3did)
-
+        
     results_handler.close()
     log_results.info('Results written to: %s' % results_handler.name)
+    
+    return overlapping_dip_3did
+
+
+def compare_interactions(dip_interactions_source=None, three_did_interactions_source=None, jena_interactions_source=None, \
+                            jena=False):
+    """Take interactions from one set (DIP, 3DID or JENA) and find overlapping interactions in the other one.
+    Final results will be written here in fasta format, where 1st line is: interactor's PDB1chain1 - PDB2chain2
+
+    >>> compare_interactions(dip_interactions_source=[(u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'), (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'), (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD')], three_did_interactions_source=[(u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD')])
+    """
+    # TODO think of possible scanarios here and adjust ifs approprietly
+    # If user wants to include DIP interactions in comparision...
+    if dip_interactions_source:
+        # If user wants to compare datasets from JENA...
+        if jena:
+            dip_interactions = get_pdbid_chain(dip_interactions_source, kind='DIP', chain=False)
+        else:
+            dip_interactions = get_pdbid_chain(dip_interactions_source, kind='DIP', chain=True)
+
+    # If user wants to include 3DID interactions in comparision...
+    if three_did_interactions_source:
+        # If user wants to compare datasets from JENA...
+        if jena:
+            three_did_interactions = get_pdbid_chain(three_did_interactions_source, kind='3DID', chain=False)
+        else:
+            three_did_interactions = get_pdbid_chain(three_did_interactions_source, kind='3DID', chain=True)
+            
+    find_overlaps(dip_interactions, three_did_interactions)
+
+    # If user wants to include JENA interactions in comparision...
+    if jena_interactions_source:
+        jena_interactions = get_pdbid_chain(jena_interactions_source, kind='JENA', chain=False)
+
+        find_overlaps(dip_interactions, three_did_interactions, jena_interactions=jena_interactions, jena=True)
 
 
 def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
@@ -160,8 +206,6 @@ def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
 if __name__ == "__main__":
     try:
         import nose
-        nose.main(argv=['', '--where=.', '--verbose', '--with-doctest', '--with-coverage'])
-        # TODO get rid of not-mine modules in code coverage report, see nosetests -h options
-        # TODO why the 1st argument in argv is not taken into account??
+        nose.main(argv=['', '--verbose', '--with-doctest', '--with-coverage', '--cover-inclusive', '--cover-package=PPIM', '--detailed-errors', '--with-profile'])
     except ImportError:
-        print 'This package uses nose module for testing (which you do not have installed).'
+        raise Exception("This package uses nose module for testing (which you do not have installed).")
