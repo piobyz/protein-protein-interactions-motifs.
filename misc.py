@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Miscellaneous tools for PPIM package.
+Miscellaneous tools for :mod:`PPIM` package: :func:`get_pdbid_chain`, :func:`find_overlaps`,
+:func:`compare_interactions`, :func:`output_fasta_file`.
 """
 
 __author__ = "Piotr Byzia"
@@ -12,20 +13,25 @@ __maintainer__ = "Piotr Byzia"
 __email__ = "piotr.byzia@gmail.com"
 __status__ = "Alpha"
 
+import os
 import logging
 import logging.config
 
 import random # random.choice in output_fasta_file()
 
 # Logging configuration
-logging.config.fileConfig("log/logging.conf")
+logging.config.fileConfig("/Users/piotr/Projects/Thesis/Spring/PPIM/log/logging.conf")
 log_load = logging.getLogger('load')
 log_results = logging.getLogger('results')
 
 
 def get_pdbid_chain(source, kind=None, chain=False):
-    """Returns dictionary with interactions. Key is PDB id (), value is ...
-    kind is one-word description of where interactions come from (DIP, 3DID, JENA, etc.).
+    """Returns dictionary with interactions. Depending on *chain* value, key is PDB id or
+    two PDBs and its chains, value is empty string or interface sequence.
+    
+    * **source** 5-element list with PDBs and chains and interface sequence.
+    * **kind** one-word description of where interactions come from (DIP, 3DID, JENA, etc.).
+    * **chain** if True, chains corresponding to PDBs are returned too.
 
     >>> get_pdbid_chain([(u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'), (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'), (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'), (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD')], kind='DIP')
     {u'1n8j': '', u'aa8j': '', u'1ssj': ''}
@@ -56,7 +62,11 @@ def get_pdbid_chain(source, kind=None, chain=False):
 
 def find_overlaps(dip_interactions, three_did_interactions, jena_interactions=None, jena=False):
     """Returns number of overlapping iternactions from 1,2 or 3 datasets.
-    Writes to FILE overlappinginteractions from DIP and 3DID.
+    Writes to FILE (results/overlapping-DIP-3DID.fa) overlapping interactions from DIP and 3DID.
+    
+    * **dip_interactions** list with interactions from DIP database.
+    * **three_did_interactions** list with interactions from 3DID database.
+    * **jena_interactions** list with PDBs from JENA database grouped by species.
     
     >>> find_overlaps({(u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'): '', (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'): '', (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'): '', (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'): '', (u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'): ''}, {(u'1n8j', u'C', u'1n8j', u'X', u'DDDDRKKKRKDKDDDD'): '', (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'E', u'666j', u'F', u'DDDDDRKKRKWDKDDD'): '', (u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'): '', (u'1n8Q', u'i', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD'): '', (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'): '', (u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'): ''})
     4
@@ -67,6 +77,7 @@ def find_overlaps(dip_interactions, three_did_interactions, jena_interactions=No
     """
     try:
         results_handler = open('results/overlapping-DIP-3DID.fa', 'w')
+        # FIXME think of some better place, after installing this package by setup.py
     except IOError:
         log_load.exception('Problems with creating file: %s' % results_handler)
 
@@ -108,14 +119,18 @@ def find_overlaps(dip_interactions, three_did_interactions, jena_interactions=No
     return overlapping_dip_3did
 
 
-def compare_interactions(dip_interactions_source=None, three_did_interactions_source=None, jena_interactions_source=None, \
-                            jena=False):
+def compare_interactions(dip_interactions_source=None, three_did_interactions_source=None, jena_interactions_source=None, jena=False):
     """Take interactions from one set (DIP, 3DID or JENA) and find overlapping interactions in the other one.
     Final results will be written here in fasta format, where 1st line is: interactor's PDB1chain1 - PDB2chain2
+    
+    * **dip_interactions_source** list of interactions from DIP.
+    * **three_did_interactions_source** list of interactions from 3DID.
+    * **jena_interactions_source** list of PDBs from JENA, grouped by species.
+    * **jena** if True, all processing will not use PDB's chains information.
 
     >>> compare_interactions(dip_interactions_source=[(u'1n8j', u'A', u'1ssj', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'1n8j', u'F', u'DDDDDRKKRKWDKDDD'), (u'1n8j', u'G', u'1n8j', u'H', u'DDDRKKRKKDDD'), (u'1n8j', u'I', u'1n8j', u'J', u'DDDDRRKKRKDRDDDD')], three_did_interactions_source=[(u'1n8j', u'V', u'1n8j', u'B', u'NNERNNNERNNNVE'), (u'1n8j', u'C', u'1n8j', u'D', u'DDDDRKKKRKDKDDDD'), (u'1n8j', u'E', u'aa8j', u'X', u'DDDDDRKKRKWDKDDD')])
     """
-    # TODO think of possible scanarios here and adjust ifs approprietly
+    # TODO think of possible scanarios here and adjust it approprietly
     # If user wants to include DIP interactions in comparision...
     if dip_interactions_source:
         # If user wants to compare datasets from JENA...
@@ -143,6 +158,10 @@ def compare_interactions(dip_interactions_source=None, three_did_interactions_so
 
 def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
     """Creates FASTA file with true positives OR true negatives from most interacting pairs of 3DID domains.
+    If *true_negatives_set* is True, output will contain shuffled interacting domains (to mimic true negatives).
+    
+    * **most_interacting_interfaces**  list with pairs of interacting PDBs, chains, their corresponding sequences and joined interfaceself.
+    * **true_negatives_set** if True, output will contain shuffled interacting domains.
     
     >>> output_fasta_file([(u'12e8', u'H', u'12e8', u'L', u'KKKDDKQQQDDTAFDDNNKFDPFF', u'KKKDDKQQQDDT', u'AFDDNNKFDPFF'), (u'12e8', u'M', u'12e8', u'P', u'ATGLKKHHHHTFFFFFFFPPAVQSSSPFFVSTNNTSTFSATSMSSASLTFFN', u'ATGLKKHHHHTFFFFFFFPPAVQSSS', u'PFFVSTNNTSTFSATSMSSASLTFFN'), (u'15c8', u'H', u'15c8', u'L', u'PSFFFFFFNNNLSSSAATTTSSMSTAKTLGFSSHSHVFPAFPHTFHFFFQ', u'PSFFFFFFNNNLSSSAATTTSSMST', u'AKTLGFSSHSHVFPAFPHTFHFFFQ'), (u'1a0q', u'H', u'1a0q', u'L', u'ATLGLKKHHHHTFFFFFFPPAVLQQQSSSPFFFVSTNNDSTFSWTSSSWSLLGLTFFN', u'ATLGLKKHHHHTFFFFFFPPAVLQQQSSS', u'PFFFVSTNNDSTFSWTSSSWSLLGLTFFN'), (u'1a1m', u'A', u'1a1m', u'B', u'YYYPPLLATTLLLKKHHHHHHTFFFFFFPPAVVVQQTSSSSTSEQSEVFPFNFVTSTNNTDTSTFSWTSSSWSLNSVLLFSFNN', u'YYYPPLLATTLLLKKHHHHHHTFFFFFFPPAVVVQQTSSSST', u'SEQSEVFPFNFVTSTNNTDTSTFSWTSSSWSLNSVLLFSFNN')])
 
@@ -188,6 +207,7 @@ def output_fasta_file(most_interacting_interfaces, true_negatives_set=False):
     else:
         try:
             fasta_output = open('results/most_interacting_domain_pairs_interfaces.fa', 'w')
+            # FIXME think of some better place, after installing this package by setup.py
         except IOError:
             log_load.exception("Unable to create a file: %s " % "results/most_interacting_domain_pairs_interfaces.fa")
 
