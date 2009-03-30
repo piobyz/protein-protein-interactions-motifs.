@@ -1,7 +1,53 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Sample workflow for PPIM package.
+This is a helper module of the :mod:`PPIM` package for String Kernel Classification for Protein-Protein Interactions using SVM.
+
+Usage: workflow.py [options] [``*``.mif25]
+
+Required files:
+
+#. ``*``.mif25 files (http://dip.doe-mbi.ucla.edu/dip/Download.cgi?SM=7)
+#. pdbsws_chain.txt (http://www.bioinf.org.uk/pdbsws/)
+#. uniprot_sprot.fasta (Uniprot's FTP)
+#. 3did_flat_Feb_15_2009.dat (http://gatealoy.pcb.ub.es/3did/download/3did_flat.gz)
+#. Manually prepared JENA files, with PDB ids assigned to a particular species. (http://.....)
+
+Databases (DB/ directory):
+
+#. DIP ``*``.mif25 based, e.g. Mmusc20090126.db (schema: doc/DIP_schema.pdf)
+#. UniProt_Seq.db (PDB_UniProt TABLE + UniProtSeq TABLE) [only ONE needed for all ``*``.mif25 DBs]
+#. 3did.db [only ONE needed for all ``*``.mif25 DBs] (schema: doc/3DID_schema.pdf)
+
+Note:   Those databases will be created after first run (chose options to specify which one you need).
+If UniProt_Seq.db and 3did.db already exist in DB/ they won't be created unless forced to (see options).
+
+Warning: Whole process takes about ... mins on MacBook Pro C2D 2.5GHz with 2GB RAM.
+
+Results are stored in results/ .
+
+See documentation in doc/ (HTML and PDF).
+
+Run tests in tests/ .
+
+
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -t, --test            Test mode: DB in RAM only!!. [default: False]
+  -e, --echo            Echo for DBs: True or False. [default: False]
+  -u, --uniprot         Run UniProt to PDB mapping. [default: False]
+  -s, --uniseq          Transfer sequences for each UniProt id from fasta
+                        file. [default: False]
+  -d, --3did            Parse 3DID flat FILE. [default: none]
+  -c, --compare         Compare set of PDBs from single species between DIP,
+                        3DID and JENA. [default: False]
+  -j FILE, --jena=FILE  Provide path to the JENA dataset. [default: none]
+  -l, --clean           Clean all temp files unless something gone wrong.
+                        [default: False]
+  -m MOST, --most=MOST  Prepare fasta file for the most interacting pair of
+                        domains from 3DID. Specify which pair should it be
+                        (1st, 2nd, ... most). [default: none]
 """
 
 __author__ = "Piotr Byzia"
@@ -31,12 +77,14 @@ import DB_3DID
 import misc
 
 # Logging configuration
-logging.config.fileConfig("log/logging.conf")
+logging.config.fileConfig("/Users/piotr/Projects/Thesis/Spring/PPIM/log/logging.conf")
 log_load = logging.getLogger('load')
 log_results = logging.getLogger('results')
 
 
 def main():
+    """Module :mod:`workflow` is a helper module containing a sample workflow using modules from :mod:`PPIM` package: :mod:`DB_DIP`, :mod:`DB_3DID`, :mod:`misc`. Function :func:`main` is the only one in :mod:`workflow` module and contains **command line options parser**, **databases initialization and maintaince** and **sequence of functions and methods calls** in order to obtain results. All steps are **logged** for full overview of what is done where and when and easier debugging."""
+
     usage="""
 This is a part of the package for String Kernel Classification
 for Protein-Protein Interactions using SVM.
@@ -148,7 +196,6 @@ Run tests in tests/ .
         if options.compare:
             interactions_DIP = DB_DIP.both_interacting_from_DIP(session_DIP)
 
-            # interactions_DIP format: [(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), ...]
             reversed_interactions_without_duplicates = DB_DIP.create_reversed_interactions_removing_duplicates(interactions_DIP)
     
             interactions_3DID = DB_3DID.both_interacting_from_3DID(session_3DID)
