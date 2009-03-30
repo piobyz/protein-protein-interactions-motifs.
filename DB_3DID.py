@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+# encoding: utf-8
 """
-Parser for 3DID flat file connected with mapper to SQLAlchemy classes.
+This module contains parser for 3DID's database flat file, mapper to SQLAlchemy classes and all methods connected with database maintaince. See :mod:`workflow` module for sample usage.
 """
 
 __author__ = "Piotr Byzia"
@@ -24,7 +25,7 @@ import logging
 import logging.config
 
 # Logging configuration
-logging.config.fileConfig("log/logging.conf")
+logging.config.fileConfig("/Users/piotr/Projects/Thesis/Spring/PPIM/log/logging.conf")
 log_load = logging.getLogger('load')
 
 
@@ -33,6 +34,20 @@ Base = declarative_base(metadata=meta)
 
 
 class Domain(Base):
+    """SQLAlchemy class in declarative_base style.
+
+    TABLE **Domains**
+    
+    * **id** entry id.
+    * **PfamA** PfamA identifier.
+    * **PfamB** PfamB identifier.
+    * **family_version** Pfam family_version.
+    
+    Constrains:
+    
+    UNIQ PfamA + PfamB + family_version
+    """
+
     __tablename__ = 'Domains'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -51,6 +66,18 @@ class Domain(Base):
 
 
 class Interaction(Base):
+    """SQLAlchemy class in declarative_base style.
+
+    TABLE **Interactions**
+    
+    * **first_domain_id** ID from Domains TABLE.
+    * **second_domain_id** ID from Domains TABLE.
+    
+    Relations:
+    
+    * many_to_many Domains ``*`` ``*`` Domains
+    """
+
     __tablename__ = 'Interactions'
 
     first_domain_id = Column(Integer, ForeignKey('Domains.id'),
@@ -71,6 +98,22 @@ class Interaction(Base):
 
 
 class PDB(Base):
+    """SQLAlchemy class in declarative_base style.
+
+    TABLE **PDB**
+    
+    * **id** entry ID.
+    * **domain_id** domain ID from Domains TABLE.
+    * **name** PDB name.
+    * **chain** PDB chain.
+    * **seqRes_range** Residues range for a sequence.
+    * **seq_length** length of sequence.
+    * **sequence** Amino Acid sequence.
+    
+    Relations:
+    
+    * many_to_one Domain ``*`` 1 PDB
+    """
     __tablename__ = 'PDB'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -106,6 +149,22 @@ class PDB(Base):
 
 
 class Interacting_PDBs(Base):
+    """SQLAlchemy class in declarative_base style.
+
+    TABLE **Interacting_PDBs**
+    
+    * **id** entry ID.
+    * **PDB_first_id** PDB ID (from PDB TABLE) of 1st interactor.
+    * **PDB_second_id** PDB ID (from PDB TABLE) of 2nd interactor.
+    * **joined_interface_seq** interface sequence.
+    * **joined_interface_len** Length of interface sequence.
+    * **score** score value (as provided by 3did).
+    * **Zscore** Z score (as provided by 3did).
+    
+    Relations:
+    
+    * many_to_many PDB ``*`` ``*`` PDB
+    """
     __tablename__ = 'Interacting_PDBs'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -160,6 +219,9 @@ class Interacting_PDBs(Base):
 def get_session(verbose, test):
     """Returns current DB session from SQLAlchemy pool.
     
+    * **verbose** if *True* SQLAlchemy **echo** is set to *True*.
+    * **test** if *True* database is crea   ted in RAM only.
+    
     >>> get_session(False, True) #doctest: +ELLIPSIS
     <sqlalchemy.orm.session.Session object at 0x...>
     
@@ -184,6 +246,11 @@ def get_session(verbose, test):
 
 def parsing_3did_ID(line, kind):
     """Parse line from 3DID flat file beginning with particular characters.
+    Returns variety of parsed entities depending on *kind*.
+    
+    * **line** line to be parsed
+    * **kind** kind of line (currently implemented: ID, 3D and //)
+    
     # >>> parsing_3did_ID('#=ID\t1-cysPrx_C\t1-cysPrx_C\t(PF10417.1@Pfam\tPF10417.1@Pfam)', kind='ID')
     # ('1-cysPrx_C', '1-cysPrx_C', 'PF10417', '1', 'PF10417', '1')
     # TODO problems with \t?? Try to load single line directly from file? In unit-tests?
@@ -230,6 +297,12 @@ def parsing_3did_ID(line, kind):
                 second_interface_residue_position, contact_type
 
 def parse_3did(threedid_file, session_3DID):
+    """Parse 3DID flat file.
+    Nothing is returned. Results are immediately stored in database using *session_3DID*.
+    
+    * **threedid_file** path to 3DID flat file.
+    * **session_3DID** SQLAlchemy session that parser should use.
+    """
     try:
         threedid_file_handler = open(threedid_file)
     except IOError:
@@ -366,17 +439,24 @@ def parse_3did(threedid_file, session_3DID):
 
 
 def both_interacting_from_3DID(session_3DID):
-    """Get a list of all interacting pairs from 3DID (with their joined sequences)."""
+    """SQLAlchemy query returns a list with all interacting pairs from 3DID (with their joined sequences).
+    
+    * **session_3DID** is SQLAlchemy session that this function should use.
+    
+    SQL equivalent:
+
+    .. code-block:: sql
+    
+        SELECT p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq
+        FROM PDB as p1, Interacting_PDBs as i1, PDB as p2, Interacting_PDBs as i2
+        WHERE p1.id = i1.PDB_first_id
+        AND p2.id = i2.PDB_second_id
+        AND i1.id = i2.id;
+    """
     p1 = aliased(PDB, name='p1')
     p2 = aliased(PDB, name='p2')
     i1 = aliased(Interacting_PDBs, name='i1')
     i2 = aliased(Interacting_PDBs, name='i2')
-
-    # SELECT p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq
-    # FROM PDB as p1, Interacting_PDBs as i1, PDB as p2, Interacting_PDBs as i2
-    # WHERE p1.id = i1.PDB_first_id
-    # AND p2.id = i2.PDB_second_id
-    # AND i1.id = i2.id;
 
     interactions_3DID = session_3DID.query(p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq).filter(p1.id==i1.PDB_first_id).filter(p2.id==i2.PDB_second_id).filter(i1.id==i2.id).all()
     
@@ -384,7 +464,23 @@ def both_interacting_from_3DID(session_3DID):
 
 
 def most_interacting_domains_from_3DID(session_3DID):
-    """Returns an ordered list of all interacting pairs of domains where minimum number of interactions is 100."""
+    """SQLAlchemy query returns an ordered list of all interacting pairs of domains where minimum number of interactions is 100.
+    
+    * **session_3DID** is SQLAlchemy session that this function should use.
+    
+    SQL equivalent:
+
+    .. code-block:: sql
+
+        SELECT p1.domain_id, p2.domain_id, COUNT(p1.domain_id) AS d1, COUNT(p2.domain_id) AS d2
+        FROM PDB AS p1, Interacting_PDBs AS i1, PDB AS p2, Interacting_PDBs AS i2
+        WHERE p1.id = i1.PDB_first_id
+        AND p2.id = i2.PDB_second_id
+        AND i1.id = i2.id
+        GROUP BY p1.domain_id, p2.domain_id
+        HAVING d1 > 100 AND d2 > 100
+        ORDER BY d1, d2;
+    """
     p1 = aliased(PDB, name='p1')
     p2 = aliased(PDB, name='p2')
     i1 = aliased(Interacting_PDBs, name='i1')
@@ -392,32 +488,30 @@ def most_interacting_domains_from_3DID(session_3DID):
     d1 = func.count(p1.domain_id).label('d1')
     d2 = func.count(p2.domain_id).label('d2')
 
-    # SELECT p1.domain_id, p2.domain_id, COUNT(p1.domain_id) AS d1, COUNT(p2.domain_id) AS d2
-    # FROM PDB AS p1, Interacting_PDBs AS i1, PDB AS p2, Interacting_PDBs AS i2
-    # WHERE p1.id = i1.PDB_first_id
-    # AND p2.id = i2.PDB_second_id
-    # AND i1.id = i2.id
-    # GROUP BY p1.domain_id, p2.domain_id
-    # HAVING d1 > 100 AND d2 > 100
-    # ORDER BY d1, d2;
-    
     most_interacting = session_3DID.query(p1.domain_id, p2.domain_id, d1, d2).filter(p1.id==i1.PDB_first_id).filter(p2.id== i2.PDB_second_id).filter(i1.id==i2.id).group_by(p1.domain_id, p2.domain_id).having(d1 > 100).having(d2 > 100).order_by(d1, d2).all()
     
     return most_interacting
     
 def most_interacting_interfaces_from_3DID(session_3DID, domain_one, domain_two):
-    """Returns interactions for one particular pair of domains with their joined interfaces' sequence."""
+    """SQLAlchemy query returns interactions for one particular pair of domains with their joined interfaces' sequence.
+    
+    * **session_3DID** is SQLAlchemy session that this function should use.
+    
+    SQL equivalent:
+
+    .. code-block:: sql
+
+        SELECT p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq
+        FROM PDB AS p1, Interacting_PDBs AS i1, PDB AS p2, Interacting_PDBs AS i2
+        WHERE p1.id = i1.PDB_first_id
+        AND p2.id = i2.PDB_second_id
+        AND i1.id = i2.id
+        AND p1.domain_id=489 AND p2.domain_id=489;
+    """
     p1 = aliased(PDB, name='p1')
     p2 = aliased(PDB, name='p2')
     i1 = aliased(Interacting_PDBs, name='i1')
     i2 = aliased(Interacting_PDBs, name='i2')
-    
-    # SELECT p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq
-    # FROM PDB AS p1, Interacting_PDBs AS i1, PDB AS p2, Interacting_PDBs AS i2
-    # WHERE p1.id = i1.PDB_first_id
-    # AND p2.id = i2.PDB_second_id
-    # AND i1.id = i2.id
-    # AND p1.domain_id=489 AND p2.domain_id=489;
     
     most_interacting_interfaces = session_3DID.query(p1.name, p1.chain, p2.name, p2.chain, i1.joined_interface_seq, p1.sequence, p2.sequence).filter(p1.id==i1.PDB_first_id).filter(p2.id==i2.PDB_second_id).filter(i1.id==i2.id).filter(p1.domain_id==domain_one).filter(p2.domain_id==domain_two).all()
     
