@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Parser for DIP flat file connected with mapper to SQLAlchemy classes.
+This module contains XML parser for DIP's database flat file, mapper to SQLAlchemy classes and all methods connected with database maintaince. See :mod:`workflow` module for sample usage.
 """
 __author__ = "Piotr Byzia"
 __credits__ = ["Hugh Shanahan"]
@@ -30,7 +30,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from Bio import SeqIO
 
 # Logging configuration
-logging.config.fileConfig("log/logging.conf")
+logging.config.fileConfig("/Users/piotr/Projects/Thesis/Spring/PPIM/log/logging.conf")
 log_load = logging.getLogger('load')
 
 
@@ -46,6 +46,16 @@ Structures = Table('Structures', meta,
 
 
 class Structure(object):
+    """SQLAlchemy class. Map to Structures Table class.
+    TABLE Structures
+    
+    * **interactor_id** Interactor ID as in Interactors TABLE.
+    * **PDB_UniProt_id** PDB_UniProt ID as in PDB_UniProt TABLE.
+    
+    Relations:
+    
+    *  many-to-many Interactors ``*`` ``*`` PDB_UniProt
+    """
     def __init__(self, interactor_id, PDB_UniProt_id):
         self.interactor_id = interactor_id
         self.PDB_UniProt_id = PDB_UniProt_id
@@ -55,8 +65,26 @@ mapper(Structure, Structures)
 
 
 class Interactors(Base):
+    """SQLAlchemy class in declarative_base style.
+    TABLE Interactors
+    
+    * **id** entry id.
+    * **dip_id** id as provided by DIP.
+    * **uniprot_id** Uniprot ID.
+    * **pdb_id** PDB id.
+    
+    Relations:
+    
+    * **structures_entry** many-to-many Interactors ``*`` ``*`` PDB_UniProt
+    """
+
     __tablename__ = 'Interactors'
 
+    # TODO in order to change default attribute docstring comment like one below is needed
+    # seems that it requires Sphinx > 0.4.2 -- overwrite EPD installation? Remember about dependency: Jinja
+    #  http://sphinx.pocoo.org/ext/autodoc.html?highlight=attribute%20documentation
+    # TODO or even better -- skip those (leave only descriptions in class docstring)
+    #: **id** entry id.
     id = Column(Integer, primary_key=True, index=True)
     dip_id = Column(String, nullable=False, unique=True, index=True)
     uniprot_id = Column(String, nullable=False, unique=True, index=True)
@@ -82,6 +110,14 @@ class Interactors(Base):
 
 
 class Interactions(Base):
+    """SQLAlchemy class in declarative_base style.
+    TABLE Interactions
+    
+    * **id** entry id.
+    * **dip_id** id as provided by DIP.
+    * **interactor_one** first interactor.
+    * **interactor_two** second interactor.
+    """
     __tablename__ = 'Interactions'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -100,6 +136,14 @@ class Interactions(Base):
 
 
 class PDB_UniProt(Base):
+    """SQLAlchemy class in declarative_base style.
+    TABLE PDB_Uniprot
+    
+    * **pdb** PDB id
+    * **chain** PDB chain
+    * **sequence** sequence retrieved based on uniprot ID
+    * **uniprot** Uniprot ID
+    """
     __tablename__ = 'PDB_UniProt'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -126,6 +170,12 @@ class PDB_UniProt(Base):
 
 
 class UniProtSeq(Base):
+    """SQLAlchemy class in declarative_base style.
+    TABLE UniProtSeq
+    
+    * **sequence** is DNA sequence for a corresponding *uniprot* ID.
+    * **uniprot** is Uniprot ID.
+    """
     __tablename__ = 'UniProtSeq'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -146,7 +196,10 @@ class UniProtSeq(Base):
 
 
 class DIPHandler(ContentHandler):
-
+    """This is SAX handler of XML parser.
+    
+    * **session** is SQLAlchemy session that parser should use.
+    """
     def __init__(self, session):
         self.interactor_one = ''
         self.interactor_two = ''
@@ -155,6 +208,11 @@ class DIPHandler(ContentHandler):
         self.session = session
 
     def startElement(self, name, attributes):
+        """Detects start tag in XML tree by name and its attributes.
+
+        * **name** name of XML node.
+        * **attributes** all attributes for particular node.
+        """
         ##### INTERACTORS TABLE
         if name == 'interactor':
             self.id = attributes.get('id')
@@ -176,12 +234,20 @@ class DIPHandler(ContentHandler):
             self.waiting_for_interactorRef_two = True
 
     def characters(self, data):
+        """Helper method for getting content of particular XML node.
+
+        * **data** contains data for particular XML node.
+        """
         if self.waiting_for_interactorRef_one:
             self.interactor_one = data
         elif self.waiting_for_interactorRef_two:
             self.interactor_two = data
 
     def endElement(self, name):
+        """Detects end tag and performs various actions with content of this tag.
+        
+        * **name** is name of closing tag.
+        """
         ##### INTERACTORS TABLE
         if name == 'interactor':
             try:
@@ -210,6 +276,10 @@ class DIPHandler(ContentHandler):
 def get_session(db_name, verbose, test):
     """Returns current DB session from SQLAlchemy pool.
     
+    * **db_name** name of databse to be created
+    * **verbose** if *True* SQLAlchemy **echo** is set to *True*.
+    * **test** if *True* database is crea   ted in RAM only.
+    
     >>> get_session('Mmusc20090126', False, True) #doctest: +ELLIPSIS
     <sqlalchemy.orm.session.Session object at 0x...>
     
@@ -233,6 +303,11 @@ def get_session(db_name, verbose, test):
 
 
 def sax_parse(file_to_parse, session):
+    """Runs a SAX parser on file and saves results to DB using SQLAlchemy session.
+    
+    * **file_to_parse** XML file to be parsed
+    * **session** is SQLAlchemy session that parser should use.
+    """
     sax_parser = make_parser()
     handler = DIPHandler(session)
     sax_parser.setContentHandler(handler)
@@ -241,7 +316,11 @@ def sax_parse(file_to_parse, session):
 
 
 def pdb2uniprot(current_session):
-    '''Create database with mapping between PDB+chain and UniProt id.'''
+    '''Create database with mapping between PDB+chain and UniProt id.
+    Uses PDB_UniProt TABLE.
+    
+    * **current_session** is SQLAlchemy session that this function should use.
+    '''
     ################ PDB_UniProt TABLE ################
     try:
         mapping_file = open('../pdbsws_chain.txt')
@@ -263,11 +342,16 @@ def pdb2uniprot(current_session):
 
 
 def uniprot_sequence(current_session):
-    ################ PDB_UniProt.sequence TABLE ################
-    # 1. Create separate DB with UniProt IDs and its sequences (uniprot_sprot.fasta) on 15.02.2009
-    # 2. Transfers sequences obtained from UniProtSeq TABLE to PDB_UniProt
-    # WARNING: Not all sequences are present in this file.
-    
+    """
+    #. Creates separate DB with UniProt IDs and its sequences from uniprot_sprot.fasta (15.02.2009).
+    #. Transfers sequences obtained from UniProtSeq TABLE to PDB_UniProt.
+
+    WARNING: Not all sequences are present in this file.
+
+    Uses PDB_UniProt.sequence TABLE.
+
+    * **current_session** is SQLAlchemy session that this function should use.
+    """
     # TODO Separate those 2 tasks!
     
     try:
@@ -301,27 +385,33 @@ def uniprot_sequence(current_session):
             log_load.exception('No results for: %s' % pdb_entry.uniprot)
 
 def both_interacting_from_DIP(current_session):
-    """docstring for both_interacting_from_DIP"""
-    # Retrieve both interacting PDB|chain from DIP
-    #
-    # SELECT 
-    #     PDB1.pdb, PDB1.chain,
-    #     PDB2.pdb, PDB2.chain
-    # FROM Interactions,
-    #     Interactors AS Int1, Interactors AS Int2,
-    #     Structures AS Str1, Structures AS Str2,
-    #     PDB_UniProt AS PDB1, PDB_UniProt AS PDB2
-    # WHERE (
-    #     (Interactions.interactor_one=Int1.id)
-    #     AND (Int1.id=Str1.interactor_id)
-    #     AND (Str1.PDB_Uniprot_id=PDB1.id)
-    # ) 
-    # AND (
-    #     (Interactions.interactor_two=Int2.id)
-    #     AND (Int2.id=Str2.interactor_id)
-    #     AND (Str2.PDB_Uniprot_id=PDB2.id)
-    # )
-    # GROUP BY Interactions.interactor_one, Interactions.interactor_two;
+    """SQLAlchemy query returns a list with both interacting proteins (PDB|chain) from DIP database.
+    
+    * **current_session** is SQLAlchemy session that this function should use.
+    
+    SQL equivalent:
+    
+    .. code-block:: sql
+    
+        SELECT 
+            PDB1.pdb, PDB1.chain,
+            PDB2.pdb, PDB2.chain
+        FROM Interactions,
+            Interactors AS Int1, Interactors AS Int2,
+            Structures AS Str1, Structures AS Str2,
+            PDB_UniProt AS PDB1, PDB_UniProt AS PDB2
+        WHERE (
+            (Interactions.interactor_one=Int1.id)
+            AND (Int1.id=Str1.interactor_id)
+            AND (Str1.PDB_Uniprot_id=PDB1.id)
+        ) 
+        AND (
+            (Interactions.interactor_two=Int2.id)
+            AND (Int2.id=Str2.interactor_id)
+            AND (Str2.PDB_Uniprot_id=PDB2.id)
+        )
+        GROUP BY Interactions.interactor_one, Interactions.interactor_two;
+    """
     PDB1 = aliased(PDB_UniProt, name='PDB1')
     PDB2 = aliased(PDB_UniProt, name='PDB2')
     Int1 = aliased(Interactors, name='Int1')
@@ -336,7 +426,9 @@ def both_interacting_from_DIP(current_session):
 
 
 def uniq(alist):
-    """Given alist returns non redundant list.
+    """Returns non redundant list.
+    
+    * **alist** list to be processed.
     
     >>> uniq([(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), (u'1e9z', u'A', u'1e9z', u'A')])
     [(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A')]
@@ -346,8 +438,9 @@ def uniq(alist):
 
 
 def create_reversed_interactions_removing_duplicates(dip_interactions_source):
-    """Takes a list of interacting PDB1|chain1|PDB2|chain2 and appends PDB2|chain2|PDB1|chain1
-    finally removing duplicates.
+    """Takes a list of interacting PDB1|chain1|PDB2|chain2 and appends PDB2|chain2|PDB1|chain1 finally removing duplicates and returs it.
+    
+    * **dip_interactions_source** a list with interacting proteins, format as described above, also, see doctest below.
     
     >>> create_reversed_interactions_removing_duplicates([(u'1e9z', u'A', u'1e9z', u'A'), (u'2zl4', u'N', u'1klx', u'A'), (u'1e9z', u'A', u'1e9z', u'A')])
     [u'1e9z|A|1e9z|A', u'2zl4|N|1klx|A', u'1klx|A|2zl4|N']
