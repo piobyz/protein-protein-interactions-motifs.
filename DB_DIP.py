@@ -11,6 +11,7 @@ __maintainer__ = "Piotr Byzia"
 __email__ = "piotr.byzia@gmail.com"
 __status__ = "Alpha"
 
+import sys
 
 import logging
 import logging.config
@@ -343,8 +344,7 @@ def pdb2uniprot(current_session):
 
 def uniprot_sequence(current_session):
     """
-    #. Creates separate DB with UniProt IDs and its sequences from uniprot_sprot.fasta (15.02.2009).
-    #. Transfers sequences obtained from UniProtSeq TABLE to PDB_UniProt.
+    Creates separate DB with UniProt IDs and its sequences from uniprot_sprot.fasta (15.02.2009).
 
     WARNING: Not all sequences are present in this file.
 
@@ -352,13 +352,11 @@ def uniprot_sequence(current_session):
 
     * **current_session** is SQLAlchemy session that this function should use.
     """
-    # TODO Separate those 2 tasks!
-    
     try:
         mapping_file = open('../uniprot_sprot.fasta')
     except IOError:
-        log_load.excepttion('File %s is not present.' % mapping_file)
-        # FIXME continue the script ommiting this analysis or exit(1)??
+        log_load.exception('File %s is not present.' % mapping_file)
+        sys.exit(1)
 
     for cur_record in SeqIO.parse(mapping_file, "fasta"):
         title = str(cur_record.name).split('|')[1]
@@ -372,7 +370,15 @@ def uniprot_sequence(current_session):
             current_session.rollback()
             log_load.exception('Entry: %s already exist in the UniProtSeq' % new_UniProtSeq)
 
-    # Fill sequence entry for each UniProt in Structures TABLE
+
+def uniprot_sequence_transfer(current_session):
+    """Fill sequence entry for each UniProt in Structures TABLE.
+    
+    Transfers sequences obtained from UniProtSeq TABLE to PDB_UniProt.
+
+    * **current_session** is SQLAlchemy session that this function should use.
+    """
+    
     all_structures = current_session.query(Structures).all()
     for structure in all_structures:
         pdb_entry = current_session.query(PDB_UniProt).filter(PDB_UniProt.id==structure.PDB_UniProt_id).one()
@@ -383,6 +389,7 @@ def uniprot_sequence(current_session):
             current_session.commit()
         except NoResultFound:
             log_load.exception('No results for: %s' % pdb_entry.uniprot)
+
 
 def both_interacting_from_DIP(current_session):
     """SQLAlchemy query returns a list with both interacting proteins (PDB|chain) from DIP database.
