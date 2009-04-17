@@ -129,7 +129,7 @@ Run tests in tests/ .
     parser.add_option("-e", "--echo", action="store_true", dest="echo", default=False, help="Echo for DBs: True or False. [default: %default]")
     parser.add_option("-u", "--uniprot", action="store_true", dest="uniprot", default=False, help="Run UniProt to PDB mapping. [default: %default]")
     parser.add_option("-s", "--uniseq", action="store_true", dest="uniseq", default=False, help="Transfer sequences for each UniProt id from fasta file. [default: %default]")
-    parser.add_option("-d", "--3did", action="store_true", dest="did", metavar="FILE", help="Parse 3DID flat FILE. [default: %default]")
+    parser.add_option("-d", "--3did", dest="did", metavar="FILE", help="Parse 3DID flat FILE. [default: %default]")
     parser.add_option("-c", "--compare", action="store_true", dest="compare", default=False, help="Compare set of PDBs from single species between DIP, 3DID and JENA. [default: %default]")
     parser.add_option("-j", "--jena", dest="jena", default=None, metavar="FILE", help="Provide path to the JENA dataset. [default: %default]")
     parser.add_option("-l", "--clean", action="store_true", dest="clean", default=False, help="Clean all temp files unless something gone wrong. [default: %default]")
@@ -164,16 +164,18 @@ Run tests in tests/ .
         DB_DIP.sax_parse(input_file, session_DIP)
     
     if options.uniprot or options.uniseq:
-        # session_DIP = DB_DIP.get_session(file_name, options.echo, options.test)
-
         if options.uniprot:
-            # Create PDB_UniProt with mappings between each PDB+chain and UniProt
+            # Create PDB_UniProt TABLE with mappings between each PDB+chain and UniProt
             DB_DIP.pdb2uniprot(session_DIP)
             log_load.debug('PDB to UniProt mapping DB has been created.')
         if options.uniseq:
             # Feed the PDB_UniProt TABLE with sequences for each UniProt
             # FIXME Not sure if this should be a sepate step OR *always* connected with the one above
-            # and this file is common to all *.mif25 so there is no need to generate more than 1!!
+            # FIXME this file is common to all *.mif25 so there is no need to generate more than 1 -- this
+            # should not be a TABLE for each species but rather SEPARATE DB (?)
+            # FIXME The real question is: what do I need UniProt sequence for?!
+            
+            # WARNING: This step is time-consuming!!
             DB_DIP.uniprot_sequence(session_DIP)
             log_load.debug('UniProt_Seq.db has been created.')
             DB_DIP.uniprot_sequence_transfer(session_DIP)
@@ -197,7 +199,6 @@ Run tests in tests/ .
     
         if options.compare:
             interactions_DIP = DB_DIP.both_interacting_from_DIP(session_DIP)
-            print len(interactions_DIP), interactions_DIP
 
             reversed_interactions_without_duplicates = DB_DIP.create_reversed_interactions_removing_duplicates(interactions_DIP)
     
@@ -215,7 +216,6 @@ Run tests in tests/ .
                                         three_did_interactions_source=interactions_3DID, jena=True)
             else:
                 # Compare 2 lists of interactions: DIP and 3DID, choose overlapping entries to create FASTA file used by SVM later
-                print len(interactions_DIP), interactions_DIP
                 misc.compare_interactions(dip_interactions_source=interactions_DIP, three_did_interactions_source=interactions_3DID)
 
         if options.most:
