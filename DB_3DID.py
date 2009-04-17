@@ -12,6 +12,7 @@ __maintainer__ = "Piotr Byzia"
 __email__ = "piotr.byzia@gmail.com"
 __status__ = "Alpha"
 
+import sys
 
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, MetaData
 from sqlalchemy.exc import IntegrityError
@@ -244,7 +245,7 @@ def get_session(verbose, test):
     
     return session_3DID
 
-def parsing_3did_ID(line, kind):
+def parsing_single_3did_line(line, kind):
     """Parse line from 3DID flat file beginning with particular characters.
     Returns variety of parsed entities depending on *kind*.
     
@@ -307,7 +308,7 @@ def parse_3did(threedid_file, session_3DID):
         threedid_file_handler = open(threedid_file)
     except IOError:
         log_load.exception('There is no such file (flat file with 3DID interactions): %s' % threedid_file)
-        # TODO sys.exit ?
+        sys.exit(1)
 
     for line in threedid_file_handler:
         if line.startswith('#=ID'):
@@ -370,7 +371,6 @@ def parse_3did(threedid_file, session_3DID):
                     try:
                         first_pdb = PDB(domain_id=first_domain_last_id, name=pdb_name, chain=first_chain,
                         seqRes_range=first_chain_range, sequence=first_seq, seq_length=first_seq_len)
-                        # FIXME Add domain_id information
                         session_3DID.add(first_pdb)
                         session_3DID.flush()
                         first_pdb_last_id = first_pdb.id
@@ -382,7 +382,6 @@ def parse_3did(threedid_file, session_3DID):
                         second_pdb = PDB(domain_id=second_domain_last_id, name=pdb_name,
                         chain=second_chain, seqRes_range=second_chain_range, sequence=second_seq,
                         seq_length=second_seq_len)
-                        # FIXME Add domain_id information
                         session_3DID.add(second_pdb)
                         session_3DID.flush()
                         second_pdb_last_id = second_pdb.id
@@ -402,8 +401,8 @@ def parse_3did(threedid_file, session_3DID):
                         session_3DID.flush()
                     except IntegrityError:
                         session_3DID.rollback()
-            except Exception, e:
-                log_load.exception("Most probably it's 1st run, so there is no interface to insert yet.", e)
+            except Exception:
+                log_load.exception("Most probably it's 1st run, so there is no interface to insert yet.")
             session_3DID.commit()
 
             # Init sequence tables for the1st sequence and then empty each after each #=3D line
