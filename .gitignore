@@ -5,3 +5,4 @@ log/warnings_errors.log
 log/results.txt
 results/*
 .coverage
+docs/.build/
