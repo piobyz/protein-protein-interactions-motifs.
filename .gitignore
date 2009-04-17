@@ -6,3 +6,5 @@ log/results.txt
 results/*
 .coverage
 docs/.build/
+external_datafiles/
+DB/
