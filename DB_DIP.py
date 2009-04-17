@@ -34,17 +34,16 @@ from Bio import SeqIO
 logging.config.fileConfig("/Users/piotr/Projects/Thesis/Spring/PPIM/log/logging.conf")
 log_load = logging.getLogger('load')
 
-
 # TABLE Interactors, Interactions, PDB_UniProt, UniProtSeq
 meta = MetaData()
 Base = declarative_base(metadata=meta)
 
 
 Structures = Table('Structures', meta,
-    Column('interactor_id', Integer, ForeignKey('Interactors.id'), primary_key=True, index=True),
+    Column('id', Integer, primary_key=True, index=True),
+    Column('interactor_id', Integer, ForeignKey('Interactors.id'), index=True),
     Column('PDB_UniProt_id', Integer, ForeignKey('PDB_UniProt.id'), index=True)
 )
-
 
 class Structure(object):
     """SQLAlchemy class. Map to Structures Table class.
@@ -60,7 +59,6 @@ class Structure(object):
     def __init__(self, interactor_id, PDB_UniProt_id):
         self.interactor_id = interactor_id
         self.PDB_UniProt_id = PDB_UniProt_id
-
 
 mapper(Structure, Structures) 
 
@@ -90,7 +88,7 @@ class Interactors(Base):
     dip_id = Column(String, nullable=False, unique=True, index=True)
     uniprot_id = Column(String, nullable=False, unique=True, index=True)
 
-    # many-to-many Interactors * * PDB
+    # many-to-many Interactors * * PDB_UniProt
     structures_entry = relation('PDB_UniProt', secondary=Structures)
 
     def __init__(self, **kw):
@@ -264,7 +262,7 @@ class DIPHandler(ContentHandler):
         if name == 'interactorRef':
             self.waiting_for_interactorRef_one = False
             self.waiting_for_interactorRef_two = False
-        ##### INTERACTORS TABLE
+        ##### INTERACTIONS TABLE
         if name == 'interaction':
             try:
                 new_interaction = Interactions(self.id_interaction, self.dip_id_interaction,
@@ -317,18 +315,18 @@ def sax_parse(file_to_parse, session):
 
 
 def pdb2uniprot(current_session):
-    '''Create database with mapping between PDB+chain and UniProt id.
+    '''Create database with mapping between PDB+chain and UniProt id in Structures TABLE.
     Uses PDB_UniProt TABLE.
+    Uses Structures TABLE.
     
     * **current_session** is SQLAlchemy session that this function should use.
     '''
     ################ PDB_UniProt TABLE ################
     try:
-        mapping_file = open('../pdbsws_chain.txt')
-        # TODO put this file in some common dir, /external_files ?
+        mapping_file = open('external_datafiles/pdbsws_chain.txt')
     except IOError:
-        log_load.exception('There is no file ../pdbsws_chain.txt with PDB to UniProt mappings.')
-        
+        log_load.exception('There is no file external_datafiles/pdbsws_chain.txt with PDB to UniProt mappings.')
+            
     # All entries from mapping_file are processed but it's quicker than comparing each UniProt id
     # and insert only those present in Interactors.uniprot_id
     for line in mapping_file:
@@ -340,6 +338,20 @@ def pdb2uniprot(current_session):
         except IntegrityError:
             current_session.rollback()
             log_load.exception('Entry: %s already exist in the DB' % new_PDB_UniProt)
+    
+    # Map UniProt ids from Interactors and PDB_UniProt in Structures TABLE.
+
+    # Retrieve all proteins from Interactors Table, get their UniProt ids
+    # and retrieve corresponding PDB name+chain from PDB_UniProt TABLE.
+    # Finally, store relations in a Structures TABLE.
+    query = current_session.query(Interactors).order_by(Interactors.id)
+    all_interactors = query.all()
+    for interactor in all_interactors:
+        pdb_list = current_session.query(PDB_UniProt).filter(PDB_UniProt.uniprot==interactor.uniprot_id).all()
+        if pdb_list:
+            for pdb_item in pdb_list:
+                interactor.structures_entry.append(pdb_item)
+                current_session.commit()
 
 
 def uniprot_sequence(current_session):
@@ -353,7 +365,7 @@ def uniprot_sequence(current_session):
     * **current_session** is SQLAlchemy session that this function should use.
     """
     try:
-        mapping_file = open('../uniprot_sprot.fasta')
+        mapping_file = open('external_datafiles/uniprot_sprot.fasta')
     except IOError:
         log_load.exception('File %s is not present.' % mapping_file)
         sys.exit(1)
